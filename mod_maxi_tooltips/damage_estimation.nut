@@ -67,6 +67,82 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 }
 
 
+local function represent_interval(x_min, x_max, num_slices)
+{
+    if (x_min == x_max) {
+        return {
+            x_array = [x_min],
+            marginal_weight_array = [1]
+        } 
+    }
+
+    local x_array = [];
+    local marginal_weight_array = [];
+
+    local n = x_max - x_min + 1;
+
+    // Push extremes with weight 1/n
+    x_array.extend([x_min, x_max]);
+    marginal_weight_array.extend([1./n, 1./n])
+
+    local slice_size = ::Math.ceil(1. * (n-2) / num_slices);
+    local remainder_size = (n-2) - (slice_size) * (num_slices - 1);
+
+    local low = x_min + 1;
+    local high = x_max - 1;
+
+    ::logError("MaxiTT: represent_interval; x_min : " + x_min + " x_max : " + x_max + "  num_slices : " + num_slices);
+    ::logError("MaxiTT: represent_interval; n : " + n + "  slice_size : " + slice_size + "  remainder_size : " + remainder_size);
+
+    local a;
+    local b;
+    while (high - low + 1 > slice_size) {
+        ::logError("MaxiTT: represent_interval; in while: low : " + low + "  high : " + high);
+
+        a = low;
+        b = low + slice_size - 1;   // exclude final point: will be counted in next interval
+
+        ::logError("MaxiTT: represent_interval; a : " + a + "  b : " + b);
+        x_array.push(0.5 * (a + b));
+        marginal_weight_array.push(1. * (b - a + 1) / n);
+
+        b = high;
+        a = high - slice_size + 1;  // exclude final point
+
+        ::logError("MaxiTT: represent_interval; a : " + a + "  b : " + b);
+        x_array.push(0.5 * (a + b));
+        marginal_weight_array.push(1. * (b - a + 1) / n);
+
+        high -= slice_size;
+        low += slice_size;
+    }
+    ::logError("MaxiTT: represent_interval; after while: low : " + low + "  high : " + high);
+
+    a = low;
+    b = high;
+    ::logError("MaxiTT: represent_interval; a : " + a + "  b : " + b);
+    x_array.push(0.5 * (a + b));
+    marginal_weight_array.push(1. * (b - a + 1) / n);
+
+    ::logError("MaxiTT: represent_interval; x_array : " + x_array + "  marginal_weight_array : " + marginal_weight_array);
+
+    return {
+        x_array = x_array,
+        marginal_weight_array = marginal_weight_array
+    }
+}
+
+
+represent_interval(10, 10, 3);
+represent_interval(0, 10, 3);
+represent_interval(35, 75, 3);
+represent_interval(60, 80, 3);
+represent_interval(35, 75, 5);
+represent_interval(60, 80, 5);
+represent_interval(60, 80, 9);
+represent_interval(60, 80, 19);
+
+
 ::ModMaxiTooltips.TacticalTooltip.getDistributionInfo <- function(x_min, x_max, y_min, y_max, scalar_function, threshold = null)
 {
     // Compute information about the distribution of `scalar_function`.
@@ -76,20 +152,16 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
     //
     // This function computes the min, max, mean of the distribution
     
-    // Generate array of values
-    local x_array = [];
-    local y_array = [];
-    local marginal_weight_array = [];
+    local num_slices = 3;
+    local res_x_array = represent_interval(x_min, x_max, num_slices);
 
-    local n = x_max - x_min + 1;
-    {
-        for (local i = x_min; i <= x_max; i++)
-        {
-            x_array.push(i);
-            y_array.push(i);
-            marginal_weight_array.push(1. / n);
-        }
-    }
+    local x_array = res_x_array.x_array;
+    local x_weight = res_x_array.marginal_weight_array;
+
+    local res_y_array = represent_interval(y_min, y_max, num_slices);
+
+    local y_array = res.x_array;
+    local y_weight = res.marginal_weight_array;
 
     // Iterate all x and y, compute values and joint weights
     local result_array = [];
@@ -100,10 +172,10 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
         for (local jdx = 0; jdx < n; jdx++)
         {
             result_array.push(
-                scalar_function(x_array[idx], y_array[jdx])
+                scalar_function(x_array[idx], x_array[jdx])
             );
             joint_weight_array.push(
-                marginal_weight_array[idx] * marginal_weight_array[jdx]
+                x_weight[idx] * y_weight[jdx]
             );
         }
     }
@@ -253,7 +325,7 @@ local function damageFromRolls(armor_roll, health_roll, body_part_hit, skill, at
 
     local distribution_body_armor = ::ModMaxiTooltips.TacticalTooltip.getDistributionInfo(
         properties.DamageRegularMin, properties.DamageRegularMax,
-        properties.DamageRegularMin, properties.DamageRegularMax,
+        properties.DamageRegularMin, properties.DamageRegularMin,
         curried_damage_body_armor,
         body_armor
     );
@@ -265,7 +337,7 @@ local function damageFromRolls(armor_roll, health_roll, body_part_hit, skill, at
     );
     local distribution_head_armor = ::ModMaxiTooltips.TacticalTooltip.getDistributionInfo(
         properties.DamageRegularMin, properties.DamageRegularMax,
-        properties.DamageRegularMin, properties.DamageRegularMax,
+        properties.DamageRegularMin, properties.DamageRegularMin,
         curried_damage_head_armor,
         head_armor
     );

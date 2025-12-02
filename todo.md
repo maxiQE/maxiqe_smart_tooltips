@@ -17,6 +17,27 @@
 
 - custom icons add concept tooltips to all icons
 
+## Damage linearity
+
+- If there is no armor, damage is linear
+- If the attack cannot break armor, damage is linear
+- If the attack always breaks armor:
+    - armor damage is fixed
+    - first batch is linear
+    - second batch is linear with a potential spike at 0 for low damage rolls
+- If breaking armor is random:
+    - armor damage is linear + spike at current armor
+    - first batch is linear in two parts, conditional on whether armor is broken or not
+    - second batch is linear in three parts:
+        - no armor break: 0
+        - armor break but insufficient health damage: 0
+        - armor break + sufficient damage
+
+- 4 point linear approximation is decent
+- 9 point linear estimation should be even better
+- check against MCMC
+- check against grouped approximations
+
 ## Tests
 
 Use the combat simulator mod from taro
