@@ -125,15 +125,26 @@ local function attack_info_tooltip_line_5(kill_proba, health_value, head_armor, 
     info = info_smartfast;
     local display_info_smartfast = [::Math.round(100 * info.distribution_head_health.proba), ::Math.round(info.distribution_head_health.mean), ::Math.round(info.distribution_head_armor.mean), ::Math.round(info.head_hit_chance), ::Math.round(100 * info.distribution_body_health.proba), ::Math.round(info.distribution_body_health.mean), ::Math.round(info.distribution_body_armor.mean)];
 
-    local show_all = ! ::MSU.deepEquals(display_info_exact, display_info_smartfast);
+    local show_all = false;
+
+    for (local idx = 0; idx < display_info_exact.len(); idx++) {
+        diff = ::Math.abs(display_info_exact[idx] - display_info_smartfast[idx]);
+        if (diff >= 3) {
+            show_all = true;
+        }
+    }
 
     if (show_all) {
+        ::logError("Maxi TT debug: both methods give different results");
+        ::MSU.Log.printData(display_info_exact);
+        ::MSU.Log.printData(display_info_smartfast);
+
         tooltip.push({
                 type = "text",
                 text = "Exact calculation; " + ::Math.round(delta_exact) + " ms"
-        })
+        });
 
-        local info = info_exact
+        local info = info_exact;
 
         // Show a single damage line: taking from body
         local show_single_line = (
@@ -227,19 +238,6 @@ local function attack_info_tooltip_line_5(kill_proba, health_value, head_armor, 
             })
         }
 
-        if (false || ::ModMaxiTooltips.Mod.Debug.isEnabled())
-        {
-            local target_text = "<div class='maxi-damage-tooltip'>";
-            target_text += tooltip_fragment_values("health.png", [info.target.health]);
-            target_text += tooltip_fragment_values("armor_head.png", [info.target.head_armor]);
-            target_text += tooltip_fragment_values("armor_body.png", [info.target.body_armor]);
-            target_text += "</div>";
-            tooltip.push({
-                type = "text",
-                text = target_text,
-                rawHTMLInText = true
-            })
-        }
     }
 
     if (show_all) {
