@@ -240,25 +240,3 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 
     return res;
 }
-
-
-// local parameters_body = {
-//     armor=40,
-//     health=40,
-//     min_damage=30,
-//     max_damage=75,
-//     guaranteed_damage=0,
-//     direct_damage_coefficient=0.3,
-//     direct_damage_coefficient_multiplier=1,
-//     health_multiplier=0.33,
-//     armor_multiplier=0.33,
-//     bodypart_damage_mult=1
-// };
-// local parameters_head = clone parameters_body;
-
-// local res = ::ModMaxiTooltips.TacticalTooltip.multi_hit_summary__monte_carlo(parameters_body, parameters_head, 3, 30);
-// ::logError("Maxi TT Debug : multi-hit ok");
-
-// local res2 = ::ModMaxiTooltips.TacticalTooltip.split_man_summary__monte_carlo(parameters_body, parameters_head);
-// ::logError("Maxi TT Debug : split-man ok");
-
