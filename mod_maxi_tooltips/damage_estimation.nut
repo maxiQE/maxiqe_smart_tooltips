@@ -133,7 +133,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 }
 
 
-local function damageFromRolls(armor_roll, health_roll, body_part_hit, skill, attacker, target){
+::ModMaxiTooltips.TacticalTooltip.damage_direct__with_roll <- function(armor_roll, health_roll, body_part_hit, skill, attacker, target){
     local properties = skill.m.Container.buildPropertiesForUse(skill, target);
 
     local bodyPartDamageMult = properties.DamageAgainstMult[body_part_hit];
@@ -142,8 +142,8 @@ local function damageFromRolls(armor_roll, health_roll, body_part_hit, skill, at
 
     local damageMult = skill.isRanged() ? properties.RangedDamageMult : properties.MeleeDamageMult;
     damageMult = damageMult * properties.DamageTotalMult;
-    local damageRegular = armor_roll * properties.DamageRegularMult;
-    local damageArmor = health_roll * properties.DamageArmorMult;
+    local damageRegular = health_roll * properties.DamageRegularMult;
+    local damageArmor = armor_roll * properties.DamageArmorMult;
     damageRegular = ::Math.max(0, damageRegular + distance_to_target * properties.DamageAdditionalWithEachTile);
     damageArmor = ::Math.max(0, damageArmor + distance_to_target * properties.DamageAdditionalWithEachTile);
     local damageDirect = ::Math.minf(1.0, properties.DamageDirectMult * (skill.m.DirectDamageMult + properties.DamageDirectAdd + (skill.isRanged() ? properties.DamageDirectRangedAdd : properties.DamageDirectMeleeAdd)));
@@ -215,12 +215,10 @@ local function damageFromRolls(armor_roll, health_roll, body_part_hit, skill, at
     damage = damage * hit_info.BodyDamageMult;
     damage = ::Math.max(0, ::Math.max(::Math.round(damage), ::Math.min(::Math.round(hit_info.DamageMinimum), ::Math.round(hit_info.DamageMinimum * other_properties.DamageReceivedTotalMult))));
 
-    // clip health damage at current health
-    damage = ::Math.min(damage, target.m.Hitpoints);
-
-    hit_info.DamageInflictedHitpoints = damage;
-
-    return hit_info
+    return {
+        health_damage=damage,
+        armor_damage=::Math.max(0, hit_info.DamageArmor)
+    }
 }
 
 ::ModMaxiTooltips.TacticalTooltip.compute_head_hit_chance <- function(attacker, target, skill){
@@ -230,13 +228,14 @@ local function damageFromRolls(armor_roll, health_roll, body_part_hit, skill, at
     return head_hit_chance;
 }
 
+// Super slow but exact
 // Compute the damage of attacker attacking target with skill
-::ModMaxiTooltips.TacticalTooltip.attack_info_summary <- function(attacker, target, skill)
+::ModMaxiTooltips.TacticalTooltip.attack_info_summary__slow__exact <- function(attacker, target, skill)
 {
     local properties = skill.m.Container.buildPropertiesForUse(skill, target);
 
     local head_hit_chance = properties.getHitchance(::Const.BodyPart.Head);
-    local res_min_body = damageFromRolls(properties.DamageRegularMin, properties.DamageRegularMin, ::Const.BodyPart.Body, skill, attacker, target);
+    local res_min_body = ::ModMaxiTooltips.TacticalTooltip.damage_direct__with_roll(properties.DamageRegularMin, properties.DamageRegularMin, ::Const.BodyPart.Body, skill, attacker, target);
 
     local hit_info = clone ::Const.Tactical.HitInfo;
     local other_properties = target.m.Skills.buildPropertiesForBeingHit(attacker, skill, hit_info);
@@ -246,16 +245,16 @@ local function damageFromRolls(armor_roll, health_roll, body_part_hit, skill, at
     local health = target.m.Hitpoints;
 
     local function curried_damage_body_armor(x, y) {
-        return damageFromRolls(x, y, ::Const.BodyPart.Body, skill, attacker, target).DamageInflictedArmor
+        return ::ModMaxiTooltips.TacticalTooltip.damage_direct__with_roll(x, y, ::Const.BodyPart.Body, skill, attacker, target).DamageInflictedArmor
     }
     local function  curried_damage_body_health(x, y) {
-        return damageFromRolls(x, y, ::Const.BodyPart.Body, skill, attacker, target).DamageInflictedHitpoints
+        return ::ModMaxiTooltips.TacticalTooltip.damage_direct__with_roll(x, y, ::Const.BodyPart.Body, skill, attacker, target).DamageInflictedHitpoints
     }
     local function  curried_damage_head_armor(x, y) {
-        return damageFromRolls(x, y, ::Const.BodyPart.Head, skill, attacker, target).DamageInflictedArmor
+        return ::ModMaxiTooltips.TacticalTooltip.damage_direct__with_roll(x, y, ::Const.BodyPart.Head, skill, attacker, target).DamageInflictedArmor
     }
     local function  curried_damage_head_health(x, y) {
-        return damageFromRolls(x, y, ::Const.BodyPart.Head, skill, attacker, target).DamageInflictedHitpoints
+        return ::ModMaxiTooltips.TacticalTooltip.damage_direct__with_roll(x, y, ::Const.BodyPart.Head, skill, attacker, target).DamageInflictedHitpoints
     }
 
     local distribution_body_armor = ::ModMaxiTooltips.TacticalTooltip.getDistributionInfo(
@@ -413,7 +412,7 @@ local function attack_info_tooltip_line_5(kill_proba, health_value, head_armor, 
     local tooltip = [];
 
     ::MSU.Utils.Timer("maxi tt timer");
-    local info_exact = ::ModMaxiTooltips.TacticalTooltip.attack_info_summary(attacker, target, skill);
+    local info_exact = ::ModMaxiTooltips.TacticalTooltip.attack_info_summary_direct__smartfast(attacker, target, skill);
     local delta_exact = ::MSU.Utils.Timer("maxi tt timer").silentStop();
     ::MSU.Utils.Timer("maxi tt timer");
     local info_smartfast = ::ModMaxiTooltips.TacticalTooltip.attack_info_summary_from_parameters__smartfast(attacker, target, skill);
@@ -534,6 +533,10 @@ local function attack_info_tooltip_line_5(kill_proba, health_value, head_armor, 
         }
     }
 
+    tooltip.extend(
+        ::ModMaxiTooltips.TacticalTooltip.attack_info_tooltip_multi_hit(attacker, target, skill)
+    );
+
 
     return tooltip
 }
@@ -576,6 +579,8 @@ local function compute_hit_distribution(hitchance, num_attacks) {
 
 
 ::ModMaxiTooltips.TacticalTooltip.attack_info_tooltip_multi_hit <- function(attacker, target, skill){
+    ::MSU.Utils.Timer("maxi tt timer");
+
     local hitchance = skill.getHitchance(target);
     local head_hit_chance = ::ModMaxiTooltips.TacticalTooltip.compute_head_hit_chance(attacker, target, skill);
 
@@ -584,28 +589,31 @@ local function compute_hit_distribution(hitchance, num_attacks) {
 
     local parameters_head = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Head);
     local parameters_body = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Body);
+
+    
     local summary_info_mc = ::ModMaxiTooltips.TacticalTooltip.multi_hit_summary__monte_carlo(parameters_body, parameters_head, num_attacks, head_hit_chance)
+
+    local delta_exact = ::MSU.Utils.Timer("maxi tt timer").silentStop();
 
     local tooltip = [];
 
     {
         tooltip.push({
                 type = "text",
-                text = "Monte-Carlo calculation"
+                text = "Monte-Carlo calculation; " + ::Math.round(delta_exact) + " ms"
         })
 
         // Normalized to 0-1
-        local overall_kill_proba = 0;
+        local marginal_kill_proba = 0;
         for (local num_hits = 0; num_hits < num_attacks; num_hits++) {
-            overall_kill_proba += summary_info_mc[num_hits].kill_proba * hit_distribution[num_hits+1];
+            marginal_kill_proba += summary_info_mc[num_hits].kill_proba * hit_distribution[num_hits+1];
         }
+        // Normalized to 0-100
+        marginal_kill_proba *= 100;
 
         {
-            // Normalized to 0-100
-            local marginal_kill_proba = overall_kill_proba * hitchance;
-
             local text_kill = "<div class='maxi-damage-tooltip'>";
-            text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", ::Math.round(100 * overall_kill_proba));
+            text_kill += missing_value();
             text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", ::Math.round(marginal_kill_proba));
             text_kill += "</div>"
             tooltip.push({
@@ -615,11 +623,11 @@ local function compute_hit_distribution(hitchance, num_attacks) {
             })
         }
 
-        tooltip.push({
-                type = "text",
-                text = attack_info_tooltip_line_5(0, 0, 0, 0, 100 * hit_distribution[0], "maxi_tt_num_hits_0.png"),
-                rawHTMLInText = true
-            })
+        // tooltip.push({
+        //         type = "text",
+        //         text = attack_info_tooltip_line_5(0, 0, 0, 0, 100 * hit_distribution[0], "maxi_tt_num_hits_0.png"),
+        //         rawHTMLInText = true
+        //     })
 
         for (local num_hits = 0; num_hits < num_attacks; num_hits++) {
             local icon_name = format("maxi_tt_num_hits_%x.png", num_hits + 1)
@@ -645,6 +653,7 @@ local function compute_hit_distribution(hitchance, num_attacks) {
 
 
 ::ModMaxiTooltips.TacticalTooltip.attack_info_tooltip_split_man <- function(attacker, target, skill){
+    ::MSU.Utils.Timer("maxi tt timer");
     local hitchance = skill.getHitchance(target);
     local head_hit_chance = ::ModMaxiTooltips.TacticalTooltip.compute_head_hit_chance(attacker, target, skill);
 
@@ -653,13 +662,15 @@ local function compute_hit_distribution(hitchance, num_attacks) {
 
     local summary_info_mc = ::ModMaxiTooltips.TacticalTooltip.split_man_summary__monte_carlo(parameters_body, parameters_head);
 
+    local delta_exact = ::MSU.Utils.Timer("maxi tt timer").silentStop();
+
     local tooltip = [];
 
     {
 
         tooltip.push({
                 type = "text",
-                text = "MonteCarlo calculation"
+                text = "MonteCarlo calculation; " + ::Math.round(delta_exact) + " ms"
         })
 
         // Normalized to 0-100
