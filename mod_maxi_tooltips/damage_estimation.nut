@@ -37,14 +37,14 @@ local function interval(a, b, n) {
 }
 
 
+// Compute information about the distribution of `scalar_function`.
+// Assumes that `x, y` are two random variables with uniform
+// distribution over the intervals [x_min, x_max], [y_min, y_max]
+// We want to find information about the distribution of scalar_function(x, y)
+//
+// This function computes the mean of the distribution and proba of exceeding threshold
 ::ModMaxiTooltips.TacticalTooltip.getDistributionInfo <- function(x_min, x_max, y_min, y_max, scalar_function, threshold = null)
 {
-    // Compute information about the distribution of `scalar_function`.
-    // Assumes that `x, y` are two random variables with uniform
-    // distribution over the intervals [x_min, x_max], [y_min, y_max]
-    // We want to find information about the distribution of scalar_function(x, y)
-    //
-    // This function computes the min, max, mean of the distribution
 
     // Generate array of values
     local x_array = [];
@@ -95,14 +95,13 @@ local function interval(a, b, n) {
     }
 
     return {
-        // min = min,
-        // max = max,
         mean = sum,
         proba = proba,
     }
 }
 
 
+// A straight adaptation from the source code
 ::ModMaxiTooltips.TacticalTooltip.damage_direct__with_roll <- function(armor_roll, health_roll, body_part_hit, skill, attacker, target){
     local properties = skill.m.Container.buildPropertiesForUse(skill, target);
 
@@ -142,7 +141,6 @@ local function interval(a, b, n) {
     hit_info.InjuryThresholdMult = properties.ThresholdToInflictInjuryMult;
     hit_info.Tile = target.getTile();
 
-    // adapted from _info.Container.onBeforeTargetHit(_info.Skill, _info.TargetEntity, hit_info);
     attacker.m.Skills.onBeforeTargetHit(skill, target, hit_info);
 
     if (target.m.Skills.hasSkill("perk.steel_brow"))
@@ -154,7 +152,6 @@ local function interval(a, b, n) {
     target.m.Items.onBeforeDamageReceived(attacker, skill, hit_info, other_properties);
     local dmgMult = other_properties.DamageReceivedTotalMult;
 
-    // REMOVED A CONDITIONAL if (skill != null)
     dmgMult = dmgMult * (skill.isRanged() ? other_properties.DamageReceivedRangedMult : other_properties.DamageReceivedMeleeMult);
 
     hit_info.DamageRegular -= other_properties.DamageRegularReduction;
@@ -163,17 +160,16 @@ local function interval(a, b, n) {
     hit_info.DamageArmor *= other_properties.DamageReceivedArmorMult * dmgMult;
     local armor = 0;
     local armorDamage = 0;
+    local armor_damage_pre_reduction = 0;
 
     if (hit_info.DamageDirect < 1.0)
     {
         armor = other_properties.Armor[body_part_hit] * other_properties.ArmorMult[body_part_hit];
+        armor_damage_pre_reduction = hit_info.DamageArmor;
         armorDamage = ::Math.min(armor, hit_info.DamageArmor);
         armor = armor - armorDamage;
         hit_info.DamageInflictedArmor = ::Math.max(0, armorDamage);
     }
-
-    hit_info.DamageFatigue *= other_properties.FatigueEffectMult * other_properties.FatigueReceivedPerHitMult * target.m.CurrentProperties.FatigueLossOnAnyAttackMult;
-    // THIS UPDATES !! target.m.Fatigue = ::Math.min(this.getFatigueMax(), ::Math.round(target.m.Fatigue + hit_info.DamageFatigue * other_properties.FatigueReceivedPerHitMult * target.m.CurrentProperties.FatigueLossOnAnyAttackMult));
 
     local damage = 0;
     damage = damage + ::Math.maxf(0.0, hit_info.DamageRegular * hit_info.DamageDirect * other_properties.DamageReceivedDirectMult - armor * this.Const.Combat.ArmorDirectDamageMitigationMult);
@@ -186,12 +182,21 @@ local function interval(a, b, n) {
     damage = damage * hit_info.BodyDamageMult;
     damage = ::Math.max(0, ::Math.max(::Math.round(damage), ::Math.min(::Math.round(hit_info.DamageMinimum), ::Math.round(hit_info.DamageMinimum * other_properties.DamageReceivedTotalMult))));
 
+    if (ModMaxiTooltips.Mod.ModSettings.getSetting("clip_health_damage").getValue()) {
+        damage = ::Math.min(damage, target.m.Hitpoints);
+    }
+    if (ModMaxiTooltips.Mod.ModSettings.getSetting("clip_armor_damage").getValue()) {
+        armor_damage_pre_reduction = ::Math.min(damage, defender_properties.Armor[body_part_hit] * defender_properties.ArmorMult[body_part_hit]);
+    }
+
     return {
         health_damage=damage,
-        armor_damage=::Math.max(0, hit_info.DamageArmor)
+        armor_damage=armor_damage_pre_reduction
     }
 }
 
+
+// A small util
 ::ModMaxiTooltips.TacticalTooltip.compute_head_hit_chance <- function(attacker, target, skill){
     local properties = skill.m.Container.buildPropertiesForUse(skill, target);
 
@@ -199,8 +204,10 @@ local function interval(a, b, n) {
     return head_hit_chance;
 }
 
-// Super slow but exact
+
 // Compute the damage of attacker attacking target with skill
+// Super slow but should be the most accurate
+// Used for tests
 ::ModMaxiTooltips.TacticalTooltip.attack_info_summary__slow__exact <- function(attacker, target, skill)
 {
     local properties = skill.m.Container.buildPropertiesForUse(skill, target);
@@ -255,6 +262,7 @@ local function interval(a, b, n) {
 
     local kill_proba = (head_hit_chance * distribution_head_health.proba + (100 - head_hit_chance) * distribution_body_health.proba);
 
+    // Todo update to new format
     local ret = {
         head_hit_chance = head_hit_chance,
         kill_proba = kill_proba,
@@ -271,13 +279,35 @@ local function interval(a, b, n) {
         distribution_head_health = distribution_head_health,
     }
 
-    return ret
+    local summary_head = {
+        health_damage = distribution_head_health.mean,
+        body_armor_damage = distribution_head_armor.mean,
+        head_armor_damage = 0,
+        kill_proba = distribution_head_health.proba,
+        hit_chance = head_hit_chance,
+    };
+
+    local summary_body = {
+        health_damage = distribution_body_health.mean,
+        body_armor_damage = distribution_body_armor.mean,
+        head_armor_damage = 0,
+        kill_proba = distribution_body_health.proba,
+        hit_chance = head_hit_chance,
+    };
+
+    local kill_chance = (head_hit_chance * summary_head.kill_proba + (100 - head_hit_chance) * summary_body.kill_proba);
+
+    return {
+        head = summary_head,
+        body = summary_body,
+        kill_chance = kill_chance,
+    }
 }
 
 
-
+// Compute all key parameters that matter for an attack in a single pass
+// A lot of heavy inspection and refactoring of the vanilla code
 ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack <- function(attacker, target, skill, body_part_hit) {
-    // Compute all key parameters that matter for an attack in a single pass
     local attacker_properties = skill.m.Container.buildPropertiesForUse(skill, target);
 
     local bodyPartDamageMult = attacker_properties.DamageAgainstMult[body_part_hit];
@@ -356,7 +386,7 @@ local function interval(a, b, n) {
         damageArmor = 0;
     } else {
         armor = parameters.armor;
-        armorDamage = ::Math.min(armor, damageArmor);
+        armorDamage = ::Math.max(0, ::Math.min(armor, damageArmor));
         armor = armor - armorDamage;
         armor_damage = ::Math.max(0, armorDamage);
 
@@ -383,57 +413,16 @@ local function interval(a, b, n) {
     }
     damage = ::Math.max(0, ::Math.round(damage));
 
-    // damage = ::Math.min(damage, parameters.health);
+    if (ModMaxiTooltips.Mod.ModSettings.getSetting("clip_health_damage").getValue()) {
+        damage = ::Math.min(damage, parameters.health);
+    }
+    if (ModMaxiTooltips.Mod.ModSettings.getSetting("clip_armor_damage").getValue()) {
+        damageArmor = ::Math.min(damage, parameters.armor);
+    }
 
     return {
         health_damage=damage,
-        health_damage_direct=health_damage_direct,
-        health_damage_armor_break=health_damage_armor_break,
-        guaranteed_damage=guaranteed_damage,
-        damage_reduction_from_armor=damage_reduction_from_armor,
-        armor_damage=::Math.max(0, damageArmor)
-    }
-}
-
-
-::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__exact <- function(parameters) {
-    // Slow but exact calculation of the damage, based on parameters
-    local roll_array = range(parameters.min_damage, parameters.max_damage);
-    local weight = 1. / roll_array.len();
-
-    local health_damage=0;
-    local health_damage_direct=0;
-    local health_damage_armor_break=0;
-    local guaranteed_damage=0;
-    local damage_reduction_from_armor=0;
-    local armor_damage=0;
-
-    local proba_armor_destroy = 0;
-    local kill_proba = 0;
-
-    foreach (idx, armor_roll in roll_array) {
-        foreach (jdx, health_roll in roll_array) {
-            local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, parameters);
-            local weight_armor = weight;
-            local weight_health = weight;
-
-            health_damage += weight_armor * weight_health * res.health_damage;
-            health_damage_direct += weight_armor * weight_health * res.health_damage_direct;
-            health_damage_armor_break += weight_armor * weight_health * res.health_damage_armor_break;
-            guaranteed_damage += weight_armor * weight_health * res.guaranteed_damage;
-            damage_reduction_from_armor += weight_armor * weight_health * res.damage_reduction_from_armor;
-            armor_damage += weight_armor * weight_health * res.armor_damage;
-
-            proba_armor_destroy += weight_armor * weight_health * (parameters.armor <= res.armor_damage).tofloat();
-            kill_proba += weight_armor * weight_health * (parameters.health <= res.health_damage).tofloat();
-        }
-    }
-
-    return {
-        health_damage=health_damage,
-        armor_damage=armor_damage,
-        proba_armor_destroy=proba_armor_destroy,
-        kill_proba=kill_proba
+        armor_damage=damageArmor
     }
 }
 
@@ -509,7 +498,7 @@ local function interval(a, b, n) {
 // Instead of computing the damage for all possible values of the damage roll, restrict the number of samples
 // - sample at most `armor_roll_number_of_points` armor roll values
 // - sample at most `maximum_sampling_points` overall
-::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__smartfast <- function(parameters) {
+::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__smartfast <- function(parameters, bodypart) {
     local maximum_sampling_points = ::ModMaxiTooltips.Mod.ModSettings.getSetting("num_samples_total").getValue();;
     local num_samples_armor = ::ModMaxiTooltips.Mod.ModSettings.getSetting("num_samples_armor").getValue();;
     local armor_roll_number_of_points = num_samples_armor;
@@ -559,203 +548,38 @@ local function interval(a, b, n) {
     }
 
     return {
-        health_damage=health_damage,
-        armor_damage=armor_damage,
-        proba_armor_destroy=proba_armor_destroy,
-        kill_proba=kill_proba
-    }
-}
-
-
-::ModMaxiTooltips.TacticalTooltip.damage_direct__summary__smartfast <- function(body_part_hit, skill, attacker, target) {
-    local maximum_sampling_points = ::ModMaxiTooltips.Mod.ModSettings.getSetting("num_samples_total").getValue();;
-    local num_samples_armor = ::ModMaxiTooltips.Mod.ModSettings.getSetting("num_samples_armor").getValue();;
-    local armor_roll_number_of_points = num_samples_armor;
-
-    local damage_range_length = parameters.max_damage - parameters.min_damage + 1;
-
-    // The point budget is large enough: do not restrict armor_roll at all
-    if (maximum_sampling_points >= damage_range_length * damage_range_length) {
-        armor_roll_number_of_points = ::Math.ceil(::Math.sqrt(maximum_sampling_points));
-    }
-
-    local parameters = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, body_part_hit);
-
-    local armor_destroy_res = ::ModMaxiTooltips.TacticalTooltip.armor_destroy_from_params(parameters, armor_roll_number_of_points);
-
-    local armor_roll_array = [];
-    local weight_armor_array = [];
-    foreach (interval_info in armor_destroy_res.representation) {
-        local proba = interval_info[0];
-        local local_array = interval(interval_info[1], interval_info[2], interval_info[3]);
-        foreach (value in local_array) {
-            armor_roll_array.push(value);
-            weight_armor_array.push(proba * 1. / local_array.len())
-        }
-    }
-
-    local num_points_health = ::Math.ceil(maximum_sampling_points / armor_roll_array.len());
-
-    local health_roll_array = interval(parameters.min_damage, parameters.max_damage, num_points_health);
-    local weight_health = 1. / health_roll_array.len();
-
-    local health_damage=0;
-    local health_damage_direct=0;
-    local health_damage_armor_break=0;
-    local guaranteed_damage=0;
-    local damage_reduction_from_armor=0;
-    local armor_damage=0;
-
-    local proba_armor_destroy = 0;
-    local kill_proba = 0;
-
-    foreach (idx, armor_roll in armor_roll_array) {
-        local weight_armor = weight_armor_array[idx];
-        foreach (jdx, health_roll in health_roll_array) {
-            local res = ::ModMaxiTooltips.TacticalTooltip.damage_direct__with_roll(armor_roll, health_roll, body_part_hit, skill, attacker, target);
-
-            health_damage += weight_armor * weight_health * res.health_damage;
-            armor_damage += weight_armor * weight_health * res.armor_damage;
-
-            proba_armor_destroy += weight_armor * weight_health * (parameters.armor <= res.armor_damage).tofloat();
-            kill_proba += weight_armor * weight_health * (parameters.health <= res.health_damage).tofloat();
-        }
-    }
-
-    return {
-        health_damage=health_damage,
-        armor_damage=armor_damage,
-        proba_armor_destroy=proba_armor_destroy,
-        kill_proba=kill_proba
-    }
-}
-
-
-// Adapter function: compute information for tooltip from attacker, target, skill triplet
-::ModMaxiTooltips.TacticalTooltip.attack_info_summary_from_parameters__exact <- function(attacker, target, skill) {
-    local parameters_head = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Head);
-    local summary_head = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__exact(parameters_head);
-
-    local parameters_body = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Body);
-    local summary_body = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__exact(parameters_body);
-
-    local head_hit_chance = ::ModMaxiTooltips.TacticalTooltip.compute_head_hit_chance(attacker, target, skill);
-
-    local kill_proba = (head_hit_chance * summary_head.kill_proba + (100 - head_hit_chance) * summary_body.kill_proba);
-
-    local ret = {
-        head_hit_chance = head_hit_chance,
+        health_damage = health_damage,
+        body_armor_damage = bodypart == "body"? armor_damage : 0,
+        head_armor_damage = bodypart != "body"? armor_damage : 0,
         kill_proba = kill_proba,
-
-        target = {
-            health = target.m.Hitpoints,
-            body_armor = target.getArmor(::Const.BodyPart.Body),
-            head_armor = target.getArmor(::Const.BodyPart.Head),
-        }
-
-        distribution_body_armor = {
-            mean=summary_body.armor_damage,
-            proba=summary_body.proba_armor_destroy
-        },
-        distribution_body_health = {
-            mean=summary_body.health_damage,
-            proba=summary_body.kill_proba
-        },
-        distribution_head_armor = {
-            mean=summary_head.armor_damage,
-            proba=summary_head.proba_armor_destroy
-        },
-        distribution_head_health = {
-            mean=summary_head.health_damage,
-            proba=summary_head.kill_proba
-        },
-    };
-
-    return ret;
+        hit_chance = 0      // placeholder
+    }
 }
 
 
-// Adapter to correct format
-::ModMaxiTooltips.TacticalTooltip.attack_info_summary_direct__smartfast <- function(attacker, target, skill) {
-    local summary_head = ::ModMaxiTooltips.TacticalTooltip.damage_direct__summary__smartfast(::Const.BodyPart.Head, skill, attacker, target);
-    local summary_body = ::ModMaxiTooltips.TacticalTooltip.damage_direct__summary__smartfast(::Const.BodyPart.Body, skill, attacker, target);
-
-    local head_hit_chance = ::ModMaxiTooltips.TacticalTooltip.compute_head_hit_chance(attacker, target, skill);
-
-    local kill_proba = (head_hit_chance * summary_head.kill_proba + (100 - head_hit_chance) * summary_body.kill_proba);
-
-    local ret = {
-        head_hit_chance = head_hit_chance,
-        kill_proba = kill_proba,
-
-        target = {
-            health = target.m.Hitpoints,
-            body_armor = target.getArmor(::Const.BodyPart.Body),
-            head_armor = target.getArmor(::Const.BodyPart.Head),
-        }
-
-        distribution_body_armor = {
-            mean=summary_body.armor_damage,
-            proba=summary_body.proba_armor_destroy
-        },
-        distribution_body_health = {
-            mean=summary_body.health_damage,
-            proba=summary_body.kill_proba
-        },
-        distribution_head_armor = {
-            mean=summary_head.armor_damage,
-            proba=summary_head.proba_armor_destroy
-        },
-        distribution_head_health = {
-            mean=summary_head.health_damage,
-            proba=summary_head.kill_proba
-        },
-    };
-
-    return ret;
-}
-
-
-// Adapter to correct format
+// Compute and format information for tooltip from attacker, target, skill triplet
 ::ModMaxiTooltips.TacticalTooltip.attack_info_summary_from_parameters__smartfast <- function(attacker, target, skill) {
     local parameters_head = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Head);
     local parameters_body = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Body);
 
-    local summary_head = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__smartfast(parameters_head);
-    local summary_body = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__smartfast(parameters_body);
+    local summary_head = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__smartfast(parameters_head, "head");
+    local summary_body = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__smartfast(parameters_body, "body");
 
     local head_hit_chance = ::ModMaxiTooltips.TacticalTooltip.compute_head_hit_chance(attacker, target, skill);
 
-    local kill_proba = (head_hit_chance * summary_head.kill_proba + (100 - head_hit_chance) * summary_body.kill_proba);
+    local kill_chance = (head_hit_chance * summary_head.kill_proba + (100 - head_hit_chance) * summary_body.kill_proba);
 
-    local ret = {
-        head_hit_chance = head_hit_chance,
-        kill_proba = kill_proba,
+    local hitchance = skill.getHitchance(target);
+    local marginal_kill_chance = info.kill_chance * hitchance / 100;
 
-        target = {
-            health = target.m.Hitpoints,
-            body_armor = target.getArmor(::Const.BodyPart.Body),
-            head_armor = target.getArmor(::Const.BodyPart.Head),
-        }
+    summary_head.hit_chance = head_hit_chance;
+    summary_body.hit_chance = 100 - head_hit_chance;
 
-        distribution_body_armor = {
-            mean=summary_body.armor_damage,
-            proba=summary_body.proba_armor_destroy
-        },
-        distribution_body_health = {
-            mean=summary_body.health_damage,
-            proba=summary_body.kill_proba
-        },
-        distribution_head_armor = {
-            mean=summary_head.armor_damage,
-            proba=summary_head.proba_armor_destroy
-        },
-        distribution_head_health = {
-            mean=summary_head.health_damage,
-            proba=summary_head.kill_proba
-        },
-    };
-
-    return ret;
+    return {
+        head = summary_head,
+        body = summary_body,
+        kill_chance = kill_chance,
+        marginal_kill_chance = marginal_kill_chance
+    }
 }
 

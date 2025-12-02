@@ -2,24 +2,9 @@
 
 ## Todo
 
-- unify summary structure: both should have body + head armor components
-
-- x missing icons
-
 - modify icons
 
     - maxi_tt_calculation_time replace with hourglass
-
-- refactor information and tooltips into a single standard format
-
-- x missing icon text
-
-- cap health and armor damage to actual values??
-
-- $ re-add armor break info?
-
-- local function compute_hit_distribution(hitchance, num_attacks)
-
 
 - hit factors: visual improvements
 
@@ -28,12 +13,6 @@
 - menu control
 
     - hit factors
-
-- hit factors: code improvements
-    - ? util functions:
-        - show value: function(val: number) -> color, display +%
-        - tooltip line: icon name, content
-    - $ improve code for immunities
 
 - bugs:
     - "Perk+" tooltips not working?
@@ -71,6 +50,14 @@
 - documentation
 
 - remove timers? Or use them to give a warning to user?
+
+- $ re-add armor break info
+
+- hit factors: code improvements
+    - ? util functions:
+        - show value: function(val: number) -> color, display +%
+        - tooltip line: icon name, content
+    - $ improve code for immunities
 
 ## Smartfast estimation
 

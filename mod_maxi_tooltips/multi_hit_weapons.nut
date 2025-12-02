@@ -7,6 +7,29 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 }
 
 
+// Skill names of attacks with multiple hits
+// Expose so that this can be modified by external mods
+::ModMaxiTooltips.TacticalTooltip.three_hit_skills <- [
+    "actives.cascade",
+    "actives.hail"
+];
+::ModMaxiTooltips.TacticalTooltip.two_hit_skills <- [
+];
+
+
+::ModMaxiTooltips.TacticalTooltip.get_number_of_attacks <- function (skill) {
+    if (::ModMaxiTooltips.TacticalTooltip.three_hit_skills.find(skill.getID()) != null) {
+        return 3
+    }
+
+    if (::ModMaxiTooltips.TacticalTooltip.two_hit_skills.find(skill.getID()) != null) {
+        return 2
+    }
+
+    return 1
+}
+
+
 ::ModMaxiTooltips.TacticalTooltip.MeanCalculator <- class {
     sum = 0.0;
     count = 0;
@@ -89,7 +112,16 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 // - reduced hit to the other body part
 //
 // <!> Summaries are slightly different since the attack hits both body parts <!>
-::ModMaxiTooltips.TacticalTooltip.split_man_summary__monte_carlo <- function (parameters_body, parameters_head) {
+::ModMaxiTooltips.TacticalTooltip.split_man_summary__monte_carlo <- function (attacker, target, skill) {
+    local parameters_head = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Head);
+    local parameters_body = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Body);
+
+    local head_hit_chance = ::ModMaxiTooltips.TacticalTooltip.compute_head_hit_chance(attacker, target, skill);
+    local hit_chance = {
+        head=head_hit_chance,
+        body=100 - head_hit_chance
+    }
+
     local start_health = parameters_body.health;
     local start_armor = {
         body=parameters_body.armor,
@@ -174,14 +206,53 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
             health_damage=health_damage.value(),
             body_armor_damage=body_armor_damage.value(),
             head_armor_damage=head_armor_damage.value(),
-            kill_proba=kill_proba.value()
+            kill_proba=kill_proba.value(),
+            hit_chance=hit_chance[initial_hit_body_part]
         }
     }
 
+    local kill_chance = (head_hit_chance * summary_res.head.kill_proba + (100 - head_hit_chance) * summary_res.body.kill_proba);
+
+    local hitchance = skill.getHitchance(target);
+    local marginal_kill_chance = info.kill_chance * hitchance / 100;
+
     return {
-        summary_body=summary_res["body"],
-        summary_head=summary_res["head"]
+        body=summary_res["body"],
+        head=summary_res["head"],
+        kill_chance=kill_chance,
+        marginal_kill_chance=marginal_kill_chance,
     }
+}
+
+
+class FactorialCache {
+    _cache = [1, 1];
+
+    function get(n) {
+        for (local i = max_cached + 1; i <= n; i++) {
+            new_val = _cache[i-1] * i;
+            _cache.push(new_val);
+        }
+
+        return _cache[n]
+    }
+}
+
+
+fact_cache = FactorialCache();
+
+
+// Compute the probability of scoring 0-hits, 1-hit, etc
+// Return an array with the probabilities
+local function compute_hit_distribution(hitchance, num_attacks) {
+    local res = [];
+    for (local num_hits = 0; num_hits <= num_attacks; num_hits++) {
+        local proba_atomic = ::Math.pow(1. * hitchance / 100, num_hits) * ::Math.pow(1 - 1. * hitchance / 100, num_attacks - num_hits);
+        local combinatorial_count = fact_cache.get(num_attacks) / fact_cache.get(num_hits) / fact_cache.get(num_attacks - num_hits);
+        res.push(proba_atomic * combinatorial_count);
+    }
+
+    return res
 }
 
 
@@ -195,8 +266,17 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 // - update the corresponding n-hit accumulator
 //
 // For standard attacks, also increment a standard head / body paired accumulators
-::ModMaxiTooltips.TacticalTooltip.multi_hit_summary__monte_carlo <- function (parameters_body, parameters_head, num_attacks, head_hit_chance) {
+::ModMaxiTooltips.TacticalTooltip.multi_hit_summary__monte_carlo <- function (attacker, target, skill) {
     local rng = ::ModMaxiTooltips.TacticalTooltip.CustomRNG(123456);
+
+    local hitchance = skill.getHitchance(target);
+    local head_hit_chance = ::ModMaxiTooltips.TacticalTooltip.compute_head_hit_chance(attacker, target, skill);
+
+    local num_attacks = ::ModMaxiTooltips.TacticalTooltip.get_number_of_attacks(skill);
+    local hit_distribution = compute_hit_distribution(hitchance, num_attacks);
+
+    local parameters_head = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Head);
+    local parameters_body = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Body);
 
     local start_health = parameters_body.health;
     local start_body_armor = parameters_body.armor;
@@ -280,6 +360,8 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 
     local res = {};
 
+    local marginal_kill_chance = 0;
+
     for (local num_hits = 0; num_hits < num_attacks; num_hits++) {
         res[num_hits] <- ({
             num_hits=num_hits+1,
@@ -287,7 +369,9 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
             body_armor_damage=body_armor_damage[num_hits].value(),
             head_armor_damage=head_armor_damage[num_hits].value(),
             kill_proba=kill_proba[num_hits].value(),
-        })
+            hit_chance=hit_distribution[num_hits] * 100
+        });
+        marginal_kill_chance = marginal_kill_chance + kill_proba[num_hits].value() * hit_distribution[num_hits] * 100
     }
 
     foreach (key in ["body", "head"]) {
@@ -296,8 +380,12 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
             body_armor_damage=body_armor_damage[key].value(),
             head_armor_damage=head_armor_damage[key].value(),
             kill_proba=kill_proba[key].value(),
+            hit_chance=hit_distribution[0] * (key == "head"? head_hit_chance : 100 - head_hit_chance)
         }
     }
+
+    res.marginal_kill_chance <- marginal_kill_chance;
+    res.kill_chance = null;
 
     return res;
 }
