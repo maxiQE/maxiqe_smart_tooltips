@@ -17,22 +17,24 @@ local queueLoadOrder = [">mod_msu", ">mod_modern_hooks", ">mod_nested_tooltips"]
 	// Declare mod
 	::ModMaxiTooltips.Mod <- ::MSU.Class.Mod(::ModMaxiTooltips.ID, ::ModMaxiTooltips.Version, ::ModMaxiTooltips.Name);
 
+    ::ModMaxiTooltips.Mod.Debug.enable();
+
 	// file imports
 	foreach (file in ::IO.enumerateFiles("mod_maxi_tooltips"))
 	{
-        ::logInfo("MaxiTooltipsLog: Loading nut file : " + file);
+        ::ModMaxiTooltips.Mod.Debug.printLog("MaxiTooltipsLog: Loading nut file : " + file);
 		::include(file);
 	}
 
 	foreach (file in ::IO.enumerateFiles("ui/mods/mod_maxi_tooltips/js"))
 	{
-        ::logInfo("MaxiTooltipsLog: Loading JS file : " + file);
+        ::ModMaxiTooltips.Mod.Debug.printLog("MaxiTooltipsLog: Loading JS file : " + file);
 		::Hooks.registerJS(file + ".js");
 	}
 
 	foreach (file in ::IO.enumerateFiles("ui/mods/mod_maxi_tooltips/css"))
 	{
-        ::logInfo("MaxiTooltipsLog: Loading CSS file : " + file);
+        ::ModMaxiTooltips.Mod.Debug.printLog("MaxiTooltipsLog: Loading CSS file : " + file);
 		::Hooks.registerCSS(file + ".css");
 	}
 });

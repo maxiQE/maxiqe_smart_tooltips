@@ -4,25 +4,14 @@
 
 - MSU: enable RawHtml in all tooltips
 
-- improve tooltip with css:
-    - spacing
-    - reduced size
-
-- x clip health-damage to current health
-- x optimize tooltip:
-    - x don't show armor when it is 0
-    - x collapse to single value when identical
-    - x collapse to duo when mean is roughly in the middle
-    - x show single line when damage is same from head and body and both armors are 0 
-
-- x improve tooltip: bold values, single value
-- x damage distribution:
-    - compute a grid of values for the rolls
-    - compute the associated values
-    - half-weight on edges, normal weight everywhere else
-    - compute mean
-- x damage information:
-    - min, max, is_min_saturated, is_max_saturated, mean
+- approximate mean calculation:
+    - 1/n weight at extremes
+    - split the rest into bigger groups of similar size using:
+        - the middle of the group as the value (float)
+        - the size of the group as the weight
+        - make it symmetric
+- Multi-hit tooltip
+- split-man tooltip
 
 ## Tests
 
