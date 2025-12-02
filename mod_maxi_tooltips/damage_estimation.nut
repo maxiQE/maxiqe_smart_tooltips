@@ -67,82 +67,6 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 }
 
 
-local function represent_interval(x_min, x_max, num_slices)
-{
-    if (x_min == x_max) {
-        return {
-            x_array = [x_min],
-            marginal_weight_array = [1]
-        } 
-    }
-
-    local x_array = [];
-    local marginal_weight_array = [];
-
-    local n = x_max - x_min + 1;
-
-    // Push extremes with weight 1/n
-    x_array.extend([x_min, x_max]);
-    marginal_weight_array.extend([1./n, 1./n])
-
-    local slice_size = ::Math.ceil(1. * (n-2) / num_slices);
-    local remainder_size = (n-2) - (slice_size) * (num_slices - 1);
-
-    local low = x_min + 1;
-    local high = x_max - 1;
-
-    ::logError("MaxiTT: represent_interval; x_min : " + x_min + " x_max : " + x_max + "  num_slices : " + num_slices);
-    ::logError("MaxiTT: represent_interval; n : " + n + "  slice_size : " + slice_size + "  remainder_size : " + remainder_size);
-
-    local a;
-    local b;
-    while (high - low + 1 > slice_size) {
-        ::logError("MaxiTT: represent_interval; in while: low : " + low + "  high : " + high);
-
-        a = low;
-        b = low + slice_size - 1;   // exclude final point: will be counted in next interval
-
-        ::logError("MaxiTT: represent_interval; a : " + a + "  b : " + b);
-        x_array.push(0.5 * (a + b));
-        marginal_weight_array.push(1. * (b - a + 1) / n);
-
-        b = high;
-        a = high - slice_size + 1;  // exclude final point
-
-        ::logError("MaxiTT: represent_interval; a : " + a + "  b : " + b);
-        x_array.push(0.5 * (a + b));
-        marginal_weight_array.push(1. * (b - a + 1) / n);
-
-        high -= slice_size;
-        low += slice_size;
-    }
-    ::logError("MaxiTT: represent_interval; after while: low : " + low + "  high : " + high);
-
-    a = low;
-    b = high;
-    ::logError("MaxiTT: represent_interval; a : " + a + "  b : " + b);
-    x_array.push(0.5 * (a + b));
-    marginal_weight_array.push(1. * (b - a + 1) / n);
-
-    ::logError("MaxiTT: represent_interval; x_array : " + x_array + "  marginal_weight_array : " + marginal_weight_array);
-
-    return {
-        x_array = x_array,
-        marginal_weight_array = marginal_weight_array
-    }
-}
-
-
-represent_interval(10, 10, 3);
-represent_interval(0, 10, 3);
-represent_interval(35, 75, 3);
-represent_interval(60, 80, 3);
-represent_interval(35, 75, 5);
-represent_interval(60, 80, 5);
-represent_interval(60, 80, 9);
-represent_interval(60, 80, 19);
-
-
 ::ModMaxiTooltips.TacticalTooltip.getDistributionInfo <- function(x_min, x_max, y_min, y_max, scalar_function, threshold = null)
 {
     // Compute information about the distribution of `scalar_function`.
@@ -152,16 +76,20 @@ represent_interval(60, 80, 19);
     //
     // This function computes the min, max, mean of the distribution
     
-    local num_slices = 3;
-    local res_x_array = represent_interval(x_min, x_max, num_slices);
+    // Generate array of values
+    local x_array = [];
+    local y_array = [];
+    local marginal_weight_array = [];
 
-    local x_array = res_x_array.x_array;
-    local x_weight = res_x_array.marginal_weight_array;
-
-    local res_y_array = represent_interval(y_min, y_max, num_slices);
-
-    local y_array = res.x_array;
-    local y_weight = res.marginal_weight_array;
+    local n = x_max - x_min + 1;
+    {
+        for (local i = x_min; i <= x_max; i++)
+        {
+            x_array.push(i);
+            y_array.push(i);
+            marginal_weight_array.push(1. / n);
+        }
+    }
 
     // Iterate all x and y, compute values and joint weights
     local result_array = [];
@@ -172,10 +100,10 @@ represent_interval(60, 80, 19);
         for (local jdx = 0; jdx < n; jdx++)
         {
             result_array.push(
-                scalar_function(x_array[idx], x_array[jdx])
+                scalar_function(x_array[idx], y_array[jdx])
             );
             joint_weight_array.push(
-                x_weight[idx] * y_weight[jdx]
+                marginal_weight_array[idx] * marginal_weight_array[jdx]
             );
         }
     }
@@ -197,8 +125,8 @@ represent_interval(60, 80, 19);
     }
 
     return {
-        min = min,
-        max = max,
+        // min = min,
+        // max = max,
         mean = sum,
         proba = proba,
     }
@@ -325,7 +253,7 @@ local function damageFromRolls(armor_roll, health_roll, body_part_hit, skill, at
 
     local distribution_body_armor = ::ModMaxiTooltips.TacticalTooltip.getDistributionInfo(
         properties.DamageRegularMin, properties.DamageRegularMax,
-        properties.DamageRegularMin, properties.DamageRegularMin,
+        properties.DamageRegularMin, properties.DamageRegularMax,
         curried_damage_body_armor,
         body_armor
     );
@@ -337,7 +265,7 @@ local function damageFromRolls(armor_roll, health_roll, body_part_hit, skill, at
     );
     local distribution_head_armor = ::ModMaxiTooltips.TacticalTooltip.getDistributionInfo(
         properties.DamageRegularMin, properties.DamageRegularMax,
-        properties.DamageRegularMin, properties.DamageRegularMin,
+        properties.DamageRegularMin, properties.DamageRegularMax,
         curried_damage_head_armor,
         head_armor
     );
@@ -368,6 +296,7 @@ local function damageFromRolls(armor_roll, health_roll, body_part_hit, skill, at
 
     return ret
 }
+
 
 
 local function missing_value() {
@@ -470,67 +399,324 @@ local function attack_info_tooltip_line(kill_proba, health_value, armor_value, h
 }
 
 
+function deepEquals(_a, _b)
+{
+	if (_a instanceof ::WeakTableRef)
+		_a = _a.get();
+	if (_b instanceof ::WeakTableRef)
+		_b = _b.get();
+	switch (typeof _a)
+	{
+		case "table":
+			if (_a.len() != _b.len())
+				return false;
+			foreach (k, v in _a)
+			{
+				if (!(k in _b) || !deepEquals(v, _b[k]))
+					return false;
+			}
+			return true;
+		case "array":
+			if (_a.len() != _b.len())
+				return false;
+			foreach (i, v in _a)
+			{
+				if (!deepEquals(v, _b[i]))
+					return false;
+			}
+			return true;
+		case "instance":
+			if (!(typeof _b != "instance") || _a.getclass() != _b.getclass())
+				return false;
+			foreach (k, v in _a.getclass())
+			{
+				if (!deepEquals(v, _b[k]))
+					return false;
+			}
+			return true;
+        case "float":
+            return _a - _b <= 0.01 && _b - _a <= 0.01
+		default:
+			return _a == _b;
+	}
+}
+
+::ModMaxiTooltips.deepEquals <- deepEquals;
+
+
 ::ModMaxiTooltips.TacticalTooltip.attack_info_tooltip <- function(attacker, target, skill){
     local hitchance = skill.getHitchance(target);
 
-    local info = ::ModMaxiTooltips.TacticalTooltip.attack_info_summary(attacker, target, skill);
-
-    // Show a single damage line: taking from body
-    local show_single_line = (
-        info.target.head_armor == 0
-        && info.target.body_armor == 0
-        && tablesAreEqual(info.distribution_head_health, info.distribution_body_health)
-    );
-
     local tooltip = [];
 
-    if (info.kill_proba >= 1)
+    ::MSU.Utils.Timer("maxi tt timer");
+    local info_exact = ::ModMaxiTooltips.TacticalTooltip.attack_info_summary(attacker, target, skill);
+    local delta_exact = ::MSU.Utils.Timer("maxi tt timer").silentStop();
+    ::MSU.Utils.Timer("maxi tt timer");
+    local info_exact_via_params = ::ModMaxiTooltips.TacticalTooltip.attack_info_summary_from_parameters(attacker, target, skill);
+    local delta_exact_via_params = ::MSU.Utils.Timer("maxi tt timer").silentStop();
+    ::MSU.Utils.Timer("maxi tt timer");
+    local info_fast = ::ModMaxiTooltips.TacticalTooltip.attack_info_summary_from_parameters__fast(attacker, target, skill);
+    local delta_fast = ::MSU.Utils.Timer("maxi tt timer").silentStop();
+    ::MSU.Utils.Timer("maxi tt timer");
+    local info_smartfast = ::ModMaxiTooltips.TacticalTooltip.attack_info_summary_from_parameters__smartfast(attacker, target, skill);
+    local delta_smartfast = ::MSU.Utils.Timer("maxi tt timer").silentStop();
+
+    // if (!::ModMaxiTooltips.deepEquals(info_exact, info_exact_via_params))
     {
-        local text_kill = "<div class='maxi-damage-tooltip'>";
-        text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", [::Math.round(info.kill_proba)]);
-        text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", [::Math.round(info.kill_proba * hitchance / 100)]);
-        text_kill += "</div>"
+        ::logError("MaxiTT: Error; both methods give different results!");
+        ::MSU.Log.printData(info_exact, 2);
+        ::MSU.Log.printData(info_exact_via_params, 2);
+
         tooltip.push({
-            type = "text",
-            text = text_kill,
-            rawHTMLInText = true
+                type = "text",
+                text = "Exact calculation; " + ::Math.round(delta_exact) + " ms"
         })
+
+        local info = info_exact
+
+        // Show a single damage line: taking from body
+        local show_single_line = (
+            info.target.head_armor == 0
+            && info.target.body_armor == 0
+            && tablesAreEqual(info.distribution_head_health, info.distribution_body_health)
+        );
+
+        tooltip.push({
+                type = "text",
+                text = attack_info_tooltip_line(info.distribution_body_health.proba, info.distribution_body_health.mean, info.distribution_body_armor.mean, 100 - info.head_hit_chance, "hitchance.png"),
+                rawHTMLInText = true
+        })
+
+        if (info.kill_proba >= 1)
+        {
+            local text_kill = "<div class='maxi-damage-tooltip'>";
+            text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", [::Math.round(info.kill_proba)]);
+            text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", [::Math.round(info.kill_proba * hitchance / 100)]);
+            text_kill += "</div>"
+            tooltip.push({
+                type = "text",
+                text = text_kill,
+                rawHTMLInText = true
+            })
+        }
+
+        // Show a single damage line: taking from body
+        if (show_single_line) {
+            tooltip.push({
+                type = "text",
+                text = attack_info_tooltip_line(info.distribution_body_health.proba, info.distribution_body_health.mean, info.distribution_body_armor.mean, 100, "hitchance.png"),
+                rawHTMLInText = true
+            })
+        } else {
+            tooltip.push({
+                type = "text",
+                text =  attack_info_tooltip_line(info.distribution_head_health.proba, info.distribution_head_health.mean, info.distribution_head_armor.mean, info.head_hit_chance, "chance_to_hit_head.png"),
+                rawHTMLInText = true
+            })
+
+            tooltip.push({
+                type = "text",
+                text = attack_info_tooltip_line(info.distribution_body_health.proba, info.distribution_body_health.mean, info.distribution_body_armor.mean, 100 - info.head_hit_chance, "hitchance.png"),
+                rawHTMLInText = true
+            })
+        }
+
     }
 
-    // Show a single damage line: taking from body
-    if (show_single_line) {
-        tooltip.push({
-            type = "text",
-            text = attack_info_tooltip_line(info.distribution_body_health.proba, info.distribution_body_health.mean, info.distribution_body_armor.mean, 100, "hitchance.png"),
-            rawHTMLInText = true
-        })
-    } else {
-        tooltip.push({
-            type = "text",
-            text =  attack_info_tooltip_line(info.distribution_head_health.proba, info.distribution_head_health.mean, info.distribution_head_armor.mean, info.head_hit_chance, "chance_to_hit_head.png"),
-            rawHTMLInText = true
-        })
-
-        tooltip.push({
-            type = "text",
-            text = attack_info_tooltip_line(info.distribution_body_health.proba, info.distribution_body_health.mean, info.distribution_body_armor.mean, 100 - info.head_hit_chance, "hitchance.png"),
-            rawHTMLInText = true
-        })
-    }
-
-    if (false || ::ModMaxiTooltips.Mod.Debug.isEnabled())
+    // if (!::ModMaxiTooltips.deepEquals(info_fast, info_exact_via_params))
     {
-        local target_text = "<div class='maxi-damage-tooltip'>";
-        target_text += tooltip_fragment("health.png", [info.target.health]);
-        target_text += tooltip_fragment("armor_head.png", [info.target.head_armor]);
-        target_text += tooltip_fragment("armor_body.png", [info.target.body_armor]);
-        target_text += "</div>";
+        local info = info_exact_via_params;
+
         tooltip.push({
-            type = "text",
-            text = target_text,
-            rawHTMLInText = true
+                type = "text",
+                text = "Exact cvp; " + ::Math.round(delta_exact_via_params) + " ms"
         })
+
+        // Show a single damage line: taking from body
+        local show_single_line = (
+            info.target.head_armor == 0
+            && info.target.body_armor == 0
+            && tablesAreEqual(info.distribution_head_health, info.distribution_body_health)
+        );
+
+        if (info.kill_proba >= 1)
+        {
+            local text_kill = "<div class='maxi-damage-tooltip'>";
+            text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", [::Math.round(info.kill_proba)]);
+            text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", [::Math.round(info.kill_proba * hitchance / 100)]);
+            text_kill += "</div>"
+            tooltip.push({
+                type = "text",
+                text = text_kill,
+                rawHTMLInText = true
+            })
+        }
+
+        // Show a single damage line: taking from body
+        if (show_single_line) {
+            tooltip.push({
+                type = "text",
+                text = attack_info_tooltip_line(info.distribution_body_health.proba, info.distribution_body_health.mean, info.distribution_body_armor.mean, 100, "hitchance.png"),
+                rawHTMLInText = true
+            })
+        } else {
+            tooltip.push({
+                type = "text",
+                text =  attack_info_tooltip_line(info.distribution_head_health.proba, info.distribution_head_health.mean, info.distribution_head_armor.mean, info.head_hit_chance, "chance_to_hit_head.png"),
+                rawHTMLInText = true
+            })
+
+            tooltip.push({
+                type = "text",
+                text = attack_info_tooltip_line(info.distribution_body_health.proba, info.distribution_body_health.mean, info.distribution_body_armor.mean, 100 - info.head_hit_chance, "hitchance.png"),
+                rawHTMLInText = true
+            })
+        }
+
+        if (false || ::ModMaxiTooltips.Mod.Debug.isEnabled())
+        {
+            local target_text = "<div class='maxi-damage-tooltip'>";
+            target_text += tooltip_fragment("health.png", [info.target.health]);
+            target_text += tooltip_fragment("armor_head.png", [info.target.head_armor]);
+            target_text += tooltip_fragment("armor_body.png", [info.target.body_armor]);
+            target_text += "</div>";
+            tooltip.push({
+                type = "text",
+                text = target_text,
+                rawHTMLInText = true
+            })
+        }
     }
+
+    {
+        local info = info_fast;
+
+        tooltip.push({
+                type = "text",
+                text = "Fast cvp; " + ::Math.round(delta_fast) + " ms"
+        })
+
+        // Show a single damage line: taking from body
+        local show_single_line = (
+            info.target.head_armor == 0
+            && info.target.body_armor == 0
+            && tablesAreEqual(info.distribution_head_health, info.distribution_body_health)
+        );
+
+        if (info.kill_proba >= 1)
+        {
+            local text_kill = "<div class='maxi-damage-tooltip'>";
+            text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", [::Math.round(info.kill_proba)]);
+            text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", [::Math.round(info.kill_proba * hitchance / 100)]);
+            text_kill += "</div>"
+            tooltip.push({
+                type = "text",
+                text = text_kill,
+                rawHTMLInText = true
+            })
+        }
+
+        // Show a single damage line: taking from body
+        if (show_single_line) {
+            tooltip.push({
+                type = "text",
+                text = attack_info_tooltip_line(info.distribution_body_health.proba, info.distribution_body_health.mean, info.distribution_body_armor.mean, 100, "hitchance.png"),
+                rawHTMLInText = true
+            })
+        } else {
+            tooltip.push({
+                type = "text",
+                text =  attack_info_tooltip_line(info.distribution_head_health.proba, info.distribution_head_health.mean, info.distribution_head_armor.mean, info.head_hit_chance, "chance_to_hit_head.png"),
+                rawHTMLInText = true
+            })
+
+            tooltip.push({
+                type = "text",
+                text = attack_info_tooltip_line(info.distribution_body_health.proba, info.distribution_body_health.mean, info.distribution_body_armor.mean, 100 - info.head_hit_chance, "hitchance.png"),
+                rawHTMLInText = true
+            })
+        }
+
+        if (false || ::ModMaxiTooltips.Mod.Debug.isEnabled())
+        {
+            local target_text = "<div class='maxi-damage-tooltip'>";
+            target_text += tooltip_fragment("health.png", [info.target.health]);
+            target_text += tooltip_fragment("armor_head.png", [info.target.head_armor]);
+            target_text += tooltip_fragment("armor_body.png", [info.target.body_armor]);
+            target_text += "</div>";
+            tooltip.push({
+                type = "text",
+                text = target_text,
+                rawHTMLInText = true
+            })
+        }
+    }
+
+    {
+        local info = info_smartfast;
+
+        tooltip.push({
+                type = "text",
+                text = "Smartfast cvp; " + ::Math.round(delta_smartfast) + " ms"
+        })
+
+        // Show a single damage line: taking from body
+        local show_single_line = (
+            info.target.head_armor == 0
+            && info.target.body_armor == 0
+            && tablesAreEqual(info.distribution_head_health, info.distribution_body_health)
+        );
+
+        if (info.kill_proba >= 1)
+        {
+            local text_kill = "<div class='maxi-damage-tooltip'>";
+            text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", [::Math.round(info.kill_proba)]);
+            text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", [::Math.round(info.kill_proba * hitchance / 100)]);
+            text_kill += "</div>"
+            tooltip.push({
+                type = "text",
+                text = text_kill,
+                rawHTMLInText = true
+            })
+        }
+
+        // Show a single damage line: taking from body
+        if (show_single_line) {
+            tooltip.push({
+                type = "text",
+                text = attack_info_tooltip_line(info.distribution_body_health.proba, info.distribution_body_health.mean, info.distribution_body_armor.mean, 100, "hitchance.png"),
+                rawHTMLInText = true
+            })
+        } else {
+            tooltip.push({
+                type = "text",
+                text =  attack_info_tooltip_line(info.distribution_head_health.proba, info.distribution_head_health.mean, info.distribution_head_armor.mean, info.head_hit_chance, "chance_to_hit_head.png"),
+                rawHTMLInText = true
+            })
+
+            tooltip.push({
+                type = "text",
+                text = attack_info_tooltip_line(info.distribution_body_health.proba, info.distribution_body_health.mean, info.distribution_body_armor.mean, 100 - info.head_hit_chance, "hitchance.png"),
+                rawHTMLInText = true
+            })
+        }
+
+        if (false || ::ModMaxiTooltips.Mod.Debug.isEnabled())
+        {
+            local target_text = "<div class='maxi-damage-tooltip'>";
+            target_text += tooltip_fragment("health.png", [info.target.health]);
+            target_text += tooltip_fragment("armor_head.png", [info.target.head_armor]);
+            target_text += tooltip_fragment("armor_body.png", [info.target.body_armor]);
+            target_text += "</div>";
+            tooltip.push({
+                type = "text",
+                text = target_text,
+                rawHTMLInText = true
+            })
+        }
+    }
+
 
     return tooltip
 }

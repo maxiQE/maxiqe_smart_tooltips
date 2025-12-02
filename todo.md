@@ -4,18 +4,23 @@
 
 - MSU: enable RawHtml in all tooltips
 
-- approximate mean calculation:
-    - 1/n weight at extremes
-    - split the rest into bigger groups of similar size using:
-        - the middle of the group as the value (float)
-        - the size of the group as the weight
-        - make it symmetric
+- x approximate mean calculation:
+    - fast sampling of armor roll
+    - precise sampling of health roll
+
 - Multi-hit tooltip
+    - show hit multiplier with current tooltip
+    - modify calculation of marginalKillChance (1 - (1 - hitchance)**k) * probaToKill
+    - modify display: show marginalKillChance > or >> depending on hit chance
 - split-man tooltip
+    - add additional line for second hit with current head armor
+    - show that this is the split-man bonus damage line
 
 - include hit factors
 
 - custom icons add concept tooltips to all icons
+    - x tooltips
+    - icons
 
 ## Damage linearity
 
