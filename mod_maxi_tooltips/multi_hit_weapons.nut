@@ -27,156 +27,176 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 }
 
 
-::ModMaxiTooltips.TacticalTooltip.split_man_summary__monte_carlo <- function (parameters_body, parameters_head) {
-    local start_health = parameters_body.health;
-    local start_body_armor = parameters_body.armor;
-    local start_head_armor = parameters_head.armor;
+::ModMaxiTooltips.TacticalTooltip.CustomRNG <- class CustomRNG {
+    _state = 1;
 
-    // For a main attack to body
-    local parameters_secondary_hit = clone parameters_head;
-    parameters_secondary_hit.health_multiplier *= 0.5;
-    parameters_secondary_hit.armor_multiplier *= 0.5;
-    parameters_secondary_hit.bodypart_damage_mult = 1;
+    // Constants for a 32-bit LCG
+    const MULTIPLIER = 1664525;
+    const INCREMENT = 1013904223;
+    const MAX_VAL = 4294967296.0; // 2^32 as a float
 
-    local health_damage = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
-    local body_armor_damage = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
-    local head_armor_damage = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
-    local kill_proba = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
-
-    local num_repeats = 100;
-
-    for (local repeat = 0; repeat < num_repeats; repeat++) {
-        // Reset health and armor
-        parameters_body.health = start_health;
-        parameters_body.armor = start_body_armor;
-        parameters_head.health = start_health;
-        parameters_head.armor = start_head_armor;
-        parameters_secondary_hit.health = start_health;
-        parameters_secondary_hit.armor = start_head_armor;
-
-        {
-            local attacked_parameters = parameters_body;
-
-            local armor_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
-            local health_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
-
-            local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, attacked_parameters);
-
-            attacked_parameters.health -= res.health_damage;
-            attacked_parameters.armor -= res.armor_damage;
-
-            parameters_body.health = attacked_parameters.health;
-            parameters_head.health = attacked_parameters.health;
-            parameters_secondary_hit.health = attacked_parameters.health;
-            parameters_secondary_hit.armor = parameters_head.armor;
-        }
-
-        {
-            local attacked_parameters = parameters_secondary_hit;
-
-            local armor_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
-            local health_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
-
-            local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, attacked_parameters);
-
-            attacked_parameters.health -= res.health_damage;
-            attacked_parameters.armor -= res.armor_damage;
-
-            parameters_body.health = attacked_parameters.health;
-            parameters_head.health = attacked_parameters.health;
-            parameters_secondary_hit.health = attacked_parameters.health;
-            parameters_head.armor = parameters_secondary_hit.armor;
-        }
-
-        // Update accumulators
-        health_damage.update(start_health - parameters_secondary_hit.health);
-        body_armor_damage.update(start_body_armor - parameters_body.armor);
-        head_armor_damage.update(start_head_armor - parameters_secondary_hit.armor);
-        kill_proba.update(parameters_secondary_hit.health <= 0);
+    // Custom constructor with input seed
+    constructor(seed) {
+        // Initialize state, ensuring it's treated as a 32-bit integer.
+        _state = (seed | 0);
+        // LCGs should typically start with a non-zero state.
+        if (_state == 0) _state = 1;
     }
 
-    local summary_body = {
-        health_damage=health_damage.value(),
-        body_armor_damage=body_armor_damage.value(),
-        head_armor_damage=head_armor_damage.value(),
-        kill_proba=kill_proba.value()
-    }
+    // Internal function to generate the next pseudo-random number as a float in [0, 1)
+    function _next() {
+        // LCG: X_n+1 = (a * X_n + c) mod 2^32
+        // We rely on Squirrel's integer behavior to handle the implicit 32-bit modulo.
+        // The result is explicitly masked with | 0 to ensure 32-bit integer context.
+        _state = ((_state * MULTIPLIER) + INCREMENT) | 0;
 
-    // for a main attack to head
-    local parameters_secondary_hit = clone parameters_body;
-    parameters_secondary_hit.health_multiplier *= 0.5;
-    parameters_secondary_hit.armor_multiplier *= 0.5;
-    parameters_secondary_hit.bodypart_damage_mult = 1;
-
-    health_damage = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
-    body_armor_damage = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
-    head_armor_damage = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
-    kill_proba = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
-
-    for (local repeat = 0; repeat < num_repeats; repeat++) {
-        // Reset health and armor
-        parameters_body.health = start_health;
-        parameters_body.armor = start_body_armor;
-        parameters_head.health = start_health;
-        parameters_head.armor = start_head_armor;
-        parameters_secondary_hit.health = start_health;
-        parameters_secondary_hit.armor = start_body_armor;
-
-        {
-            local attacked_parameters = parameters_head;
-
-            local armor_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
-            local health_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
-
-            local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, attacked_parameters);
-
-            attacked_parameters.health -= res.health_damage;
-            attacked_parameters.armor -= res.armor_damage;
-
-            parameters_body.health = attacked_parameters.health;
-            parameters_head.health = attacked_parameters.health;
-            parameters_secondary_hit.health = attacked_parameters.health;
+        // Convert the 32-bit signed integer state to a positive float value [0, 2^32)
+        local float_val = _state.tofloat();
+        if (float_val < 0.0) {
+            float_val += MAX_VAL;
         }
 
-        {
-            local attacked_parameters = parameters_secondary_hit;
+        // Normalize to [0, 1)
+        return float_val / MAX_VAL;
+    }
 
-            local armor_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
-            local health_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
-
-            local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, attacked_parameters);
-
-            attacked_parameters.health -= res.health_damage;
-            attacked_parameters.armor -= res.armor_damage;
-
-            parameters_body.health = attacked_parameters.health;
-            parameters_head.health = attacked_parameters.health;
-            parameters_secondary_hit.health = attacked_parameters.health;
+    // Function to sample uniformly from the integers between min and max (inclusive)
+    function rand(min, max) {
+        // Swap min/max if they are reversed to ensure correct range calculation
+        if (min > max) {
+            local temp = min;
+            min = max;
+            max = temp;
         }
 
-        // Update accumulators
-        health_damage.update(start_health - parameters_secondary_hit.health);
-        body_armor_damage.update(start_body_armor - parameters_secondary_hit.armor);
-        head_armor_damage.update(start_head_armor - parameters_head.armor);
-        kill_proba.update(parameters_secondary_hit.health <= 0);
-    }
+        local range = max - min + 1;
 
-    local summary_head = {
-        health_damage=health_damage.value(),
-        body_armor_damage=body_armor_damage.value(),
-        head_armor_damage=head_armor_damage.value(),
-        kill_proba=kill_proba.value()
-    }
+        // Generate the raw float [0, 1)
+        local raw_float = _next();
 
-    return {
-        summary_body=summary_body,
-        summary_head=summary_head
+        // Scale and shift: floor(raw_float * range) + min
+        return ::Math.floor(raw_float * range) + min;
     }
 }
 
 
+// Custom estimation code for split man
+//
+// Use Monte-Carlo simulation to avoid dealing with the huge sample space
+//
+// This function simply reproduces the structure of the split-man hit
+// - big hit to targetted body part
+// - reduced hit to the other body part
+//
+// <!> Summaries are slightly different since the attack hits both body parts <!>
+::ModMaxiTooltips.TacticalTooltip.split_man_summary__monte_carlo <- function (parameters_body, parameters_head) {
+    local rng = ::ModMaxiTooltips.TacticalTooltip.CustomRNG(123456);
 
+    local start_health = parameters_body.health;
+    local start_armor = {
+        body=parameters_body.armor,
+        head=parameters_head.armor
+    }
+
+    local all_parameters = {
+        main={
+            body=parameters_body,
+            head=parameters_head
+        },
+        secondary={
+            body=clone parameters_body,
+            head=clone parameters_head
+        }
+    }
+
+    // Update parameters for secondary hit
+    foreach (body_part in ["body", "head"]) {
+        all_parameters.secondary[body_part].health_multiplier *= 0.5;
+        all_parameters.secondary[body_part].armor_multiplier *= 0.5;
+        all_parameters.secondary[body_part].bodypart_damage_mult = 1;
+    }
+
+    local num_repeats = ::ModMaxiTooltips.Mod.ModSettings.getSetting("num_samples_monte_carlo").getValue();
+
+    local summary_res = {};
+
+    foreach (initial_hit_body_part in ["body", "head"]) {
+        local health_damage = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
+        local body_armor_damage = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
+        local head_armor_damage = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
+        local kill_proba = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
+
+        local secondary_hit_body_part = initial_hit_body_part == "body" ? "head": "body";
+
+        for (local repeat = 0; repeat < num_repeats; repeat++) {
+            // Reset health and armor
+            foreach (hit_type_temp in ["main", "secondary"]) {
+                foreach (body_part_temp in ["body", "head"]) {
+                    all_parameters[hit_type_temp][body_part_temp].health = start_health;
+                    all_parameters[hit_type_temp][body_part_temp].armor = start_armor[body_part_temp];
+                }
+            }
+
+            foreach (hit_type in ["main", "secondary"]) {
+                local attacked_body_part = hit_type == "main"? initial_hit_body_part : secondary_hit_body_part;
+
+                local attacked_parameters = all_parameters[hit_type][attacked_body_part];
+
+                local armor_roll = rng.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
+                local health_roll = rng.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
+
+                local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, attacked_parameters);
+
+                attacked_parameters.health -= res.health_damage;
+                attacked_parameters.armor -= res.armor_damage;
+
+                // Resync health and armor on all parameters
+                foreach (hit_type_temp in ["main", "secondary"]) {
+                    foreach (body_part_temp in ["body", "head"]) {
+                        // Update health for all
+                        all_parameters[hit_type_temp][body_part_temp].health = attacked_parameters.health;
+                    }
+                    // Update armor only for attacked_body_part
+                    all_parameters[hit_type_temp][attacked_body_part].armor = attacked_parameters.armor;
+                }
+            }
+
+            // After both hit_type have resolved, update accumulators
+            health_damage.update(start_health - parameters_secondary_hit.health);
+            body_armor_damage.update(start_body_armor - parameters_body.armor);
+            head_armor_damage.update(start_head_armor - parameters_secondary_hit.armor);
+            kill_proba.update(parameters_secondary_hit.health <= 0);
+        }
+
+        // After all repeats, create summary
+        summary_res[initial_hit_body_part] = {
+            health_damage=health_damage.value(),
+            body_armor_damage=body_armor_damage.value(),
+            head_armor_damage=head_armor_damage.value(),
+            kill_proba=kill_proba.value()
+        }
+    }
+
+    return {
+        summary_body=summary_res["body"],
+        summary_head=summary_res["head"]
+    }
+}
+
+
+// Custom estimation code for multi-hit attacks
+// <!> This also works for standard attacks <!>
+//
+// Use Monte-Carlo simulation to avoid dealing with the huge sample space
+//
+// This function simply reproduces the structure of a multi-hit attack
+// - accumulate hits
+// - update the corresponding n-hit accumulator
+//
+// For standard attacks, also increment a standard head / body paired accumulators
 ::ModMaxiTooltips.TacticalTooltip.multi_hit_summary__monte_carlo <- function (parameters_body, parameters_head, num_attacks, head_hit_chance) {
+    local rng = ::ModMaxiTooltips.TacticalTooltip.CustomRNG(123456);
+
     local start_health = parameters_body.health;
     local start_body_armor = parameters_body.armor;
     local start_head_armor = parameters_head.armor;
@@ -186,6 +206,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
     local head_armor_damage = {};
     local kill_proba = {};
 
+    // Multi-hit accumulators
     for (local num_hits = 0; num_hits < num_attacks; num_hits++) {
         health_damage[num_hits] <- ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
         body_armor_damage[num_hits] <- ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
@@ -193,6 +214,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
         kill_proba[num_hits] <- ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
     }
 
+    // Body - Head accumulators for standard attacks
     foreach (key in ["body", "head"]) {
         health_damage[key] <- ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
         body_armor_damage[key] <- ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
@@ -200,7 +222,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
         kill_proba[key] <- ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
     }
 
-    local num_repeats = 400;
+    local num_repeats = ::ModMaxiTooltips.Mod.ModSettings.getSetting("num_samples_monte_carlo").getValue();
 
     for (local repeat = 0; repeat < num_repeats; repeat++) {
         // Reset health and armor
@@ -213,7 +235,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
             local attack_key = null;
             {
                 local attacked_parameters;
-                local body_part_roll = ::Math.rand(1, 100);
+                local body_part_roll = rng.rand(1, 100);
                 // Make first roll deterministic to split evenly between head and body attacks
                 if (num_hits == 0) {
                     body_part_roll = ((100. * repeat / num_repeats) + 1);
@@ -226,14 +248,16 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
                     attacked_parameters = parameters_body;
                 }
 
-                local armor_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
-                local health_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
+                local armor_roll = rng.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
+                local health_roll = rng.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
 
                 local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, attacked_parameters);
 
                 attacked_parameters.health -= res.health_damage;
                 attacked_parameters.armor -= res.armor_damage;
 
+                // Synchronize parameters
+                // Since armor isn't shared, we don't need to sync it
                 parameters_body.health = attacked_parameters.health;
                 parameters_head.health = attacked_parameters.health;
             }
@@ -243,6 +267,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
             head_armor_damage[num_hits].update(start_head_armor - parameters_head.armor);
             kill_proba[num_hits].update(parameters_body.health <= 0);
 
+            // Increment accumulator for a standard attack
             if (num_hits == 0 && attack_key) {
                 health_damage[attack_key].update(start_health - parameters_body.health);
                 body_armor_damage[attack_key].update(start_body_armor - parameters_body.armor);

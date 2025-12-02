@@ -2,38 +2,21 @@
 
 ## Todo
 
-- menu control
-
-    - monte-carlo: num-samples
-    - fast: num samples
-    - ::ModMaxiTooltips.TacticalTooltip.armor_destroy_from_params
-        - local total_number_of_points = 7;
-
-- ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__smartfast <- function(parameters) {
-    local maximum_sampling_points = 105;
-    local armor_roll_number_of_points = 7;
-
-    - raise armor_roll_number_of_points if the number of points is low enough that (max - min + 1)**2 <= maximum_sampling_points
-
-
-- ::ModMaxiTooltips.TacticalTooltip.attack_info_tooltip_split_man
-    
-    - x single line when damage is equal
-
-- hit factors: code improvements
-    - add nine lives
-    - separate function for each section
-    - util functions:
-        - show value: function(val: number) -> color, display +%
-        - tooltip line: icon name, content
-    - separate function for each line
-    - improve code for immunities
-    - improve damage reduction code
+- x replace random with custom RNG that can be seeded easily without interfering with external RNG
 
 - hit factors: visual improvements
-    - icons?
+    - add warning icons
     - clearly separate sections
-    - clear alerts for immunities and 9lives
+
+- menu control
+
+    - hit factors
+
+- hit factors: code improvements
+    - ? util functions:
+        - show value: function(val: number) -> color, display +%
+        - tooltip line: icon name, content
+    - improve code for immunities
 
 - bugs:
     - "Perk+" tooltips not working?
@@ -41,6 +24,7 @@
     - Rounding error difference between the two smartfast calculations somehow
         - check details of code?
         - >> replaced a maxf by max?
+        - run benchmark or test?
 
 - tests:
 
@@ -58,6 +42,8 @@
         - `attack_info_summary__slow__exact`
             - using `damage_direct__with_roll`
 
+        - old and new implementation of split-man
+
 - benchmark:
 
     - compare `damage_from_parameters__summary__exact`
@@ -67,7 +53,7 @@
 
 - documentation
 
-- remove timers
+- remove timers? Or use them to give a warning to user?
 
 ## Smartfast estimation
 

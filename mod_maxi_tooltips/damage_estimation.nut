@@ -510,8 +510,16 @@ local function interval(a, b, n) {
 // - sample at most `armor_roll_number_of_points` armor roll values
 // - sample at most `maximum_sampling_points` overall
 ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__smartfast <- function(parameters) {
-    local maximum_sampling_points = 105;
-    local armor_roll_number_of_points = 7;
+    local maximum_sampling_points = ::ModMaxiTooltips.Mod.ModSettings.getSetting("num_samples_total").getValue();;
+    local num_samples_armor = ::ModMaxiTooltips.Mod.ModSettings.getSetting("num_samples_armor").getValue();;
+    local armor_roll_number_of_points = num_samples_armor;
+
+    local damage_range_length = parameters.max_damage - parameters.min_damage + 1;
+
+    // The point budget is large enough: do not restrict armor_roll at all
+    if (maximum_sampling_points >= damage_range_length * damage_range_length) {
+        armor_roll_number_of_points = ::Math.ceil(::Math.sqrt(maximum_sampling_points));
+    }
 
     local armor_destroy_res = ::ModMaxiTooltips.TacticalTooltip.armor_destroy_from_params(parameters, armor_roll_number_of_points);
 
@@ -532,10 +540,6 @@ local function interval(a, b, n) {
     local weight_health = 1. / health_roll_array.len();
 
     local health_damage=0;
-    local health_damage_direct=0;
-    local health_damage_armor_break=0;
-    local guaranteed_damage=0;
-    local damage_reduction_from_armor=0;
     local armor_damage=0;
 
     local proba_armor_destroy = 0;
@@ -547,10 +551,6 @@ local function interval(a, b, n) {
             local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, parameters);
 
             health_damage += weight_armor * weight_health * res.health_damage;
-            health_damage_direct += weight_armor * weight_health * res.health_damage_direct;
-            health_damage_armor_break += weight_armor * weight_health * res.health_damage_armor_break;
-            guaranteed_damage += weight_armor * weight_health * res.guaranteed_damage;
-            damage_reduction_from_armor += weight_armor * weight_health * res.damage_reduction_from_armor;
             armor_damage += weight_armor * weight_health * res.armor_damage;
 
             proba_armor_destroy += weight_armor * weight_health * (parameters.armor <= res.armor_damage).tofloat();
@@ -568,8 +568,16 @@ local function interval(a, b, n) {
 
 
 ::ModMaxiTooltips.TacticalTooltip.damage_direct__summary__smartfast <- function(body_part_hit, skill, attacker, target) {
-    local maximum_sampling_points = 105;
-    local armor_roll_number_of_points = 7;
+    local maximum_sampling_points = ::ModMaxiTooltips.Mod.ModSettings.getSetting("num_samples_total").getValue();;
+    local num_samples_armor = ::ModMaxiTooltips.Mod.ModSettings.getSetting("num_samples_armor").getValue();;
+    local armor_roll_number_of_points = num_samples_armor;
+
+    local damage_range_length = parameters.max_damage - parameters.min_damage + 1;
+
+    // The point budget is large enough: do not restrict armor_roll at all
+    if (maximum_sampling_points >= damage_range_length * damage_range_length) {
+        armor_roll_number_of_points = ::Math.ceil(::Math.sqrt(maximum_sampling_points));
+    }
 
     local parameters = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, body_part_hit);
 
@@ -623,7 +631,7 @@ local function interval(a, b, n) {
 }
 
 
-// Adapter to correct format
+// Adapter function: compute information for tooltip from attacker, target, skill triplet
 ::ModMaxiTooltips.TacticalTooltip.attack_info_summary_from_parameters__exact <- function(attacker, target, skill) {
     local parameters_head = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Head);
     local summary_head = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__exact(parameters_head);

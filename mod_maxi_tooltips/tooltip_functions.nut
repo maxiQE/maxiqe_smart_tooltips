@@ -297,7 +297,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 		{
 			foreach( perk in perks )
 			{
-				if (::ModMaxiTooltips.Mod.ModSettings.getSetting("ShowStatusPerkAndEffect").getValue() == false)
+				if (::ModMaxiTooltips.Mod.ModSettings.getSetting("ShowStatusPerkAndEffect").getValue() == false) {}
 					if (!perk.isHidden() && perk.isType(::Const.SkillType.StatusEffect)) continue;
 
 				entryText += ::ModMaxiTooltips.NestedTooltips.getNestedSkillName(perk) + ", ";

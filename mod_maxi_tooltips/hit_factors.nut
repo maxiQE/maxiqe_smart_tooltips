@@ -43,89 +43,140 @@ local function nested_tooltip(text, tt_type, tt_ref = null) {
 }
 
 
-::ModMaxiTooltips.TacticalTooltip.getHitFactors <- function (skill, tile)
+// Skill hit-chance bonus
+local function getHitFactorSkillHitChanceBonus(skill, tile, user, myTile, targetEntity, distanceToTarget)
 {
-    local ret = [];
-    local user = skill.m.Container.getActor();
-    local myTile = user.getTile();
-    local targetEntity = tile.IsOccupiedByActor ? tile.getEntity() : null;
-    local distanceToTarget = user.getTile().getDistanceTo(tile);
-
+    local tooltips = [];
     if (skill.m.HitChanceBonus > 0) {
-        ret.push({
+        tooltips.push({
             icon = "ui/tooltips/positive.png",
             text = green("" + skill.m.HitChanceBonus + "%") + " " + ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill))
         });
     }
+    return tooltips;
+}
 
+
+// Skill too-close malus
+local function getHitFactorSkillTooCloseMalus(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     if (skill.m.IsTooCloseShown && skill.m.HitChanceBonus < 0)
     {
-        ret.push({
+        tooltips.push({
             icon = "ui/tooltips/negative.png",
             text = red("" + (-skill.m.HitChanceBonus) + "%") + " Too close"
         });
     }
+    return tooltips;
+}
+
+
+// Skill universal hit-chance malus
+local function getHitFactorSkillUniversalMalus(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     else if (skill.m.HitChanceBonus < 0)
     {
-        ret.push({
+        tooltips.push({
             icon = "ui/tooltips/negative.png",
             text = red("" + (-skill.m.HitChanceBonus) + "%") + " " + skill.getName()
         });
     }
+    return tooltips;
+}
 
+
+// Skill hit-chance modifier for ranged attack
+local function getHitFactorSkillHitChanceModifier(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     if (skill.m.HitChanceBonus == 0) {
         local property = skill.m.IsRanged? "RangedSkill" : "MeleeSkill";
         local diff = getDifferenceInProperty(user, targetEntity, skill, property);
 
         if (diff > 0) {
-            ret.push({
-				icon = "ui/tooltips/positive.png",
-				text = green(diff + "%") + " " + skill.getName()
-			});
+            tooltips.push({
+                icon = "ui/tooltips/positive.png",
+                text = green(diff + "%") + " " + skill.getName()
+            });
         }
         if (diff < 0) {
-            ret.push({
-				icon = "ui/tooltips/negative.png",
-				text = green(diff + "%") + " " + skill.getName()
-			});
+            tooltips.push({
+                icon = "ui/tooltips/negative.png",
+                text = green(diff + "%") + " " + skill.getName()
+            });
         }
     }
+    return tooltips;
+}
 
+
+// Bonus hit-chance from surrounding
+local function getHitFactorBonusFromSurrounding(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     if (!skill.m.IsRanged && targetEntity != null && targetEntity.getSurroundedCount() != 0) {
         if (!targetEntity.m.CurrentProperties.IsImmuneToSurrounding)
-		{
-		    local malus = ::Math.max(0, user.getCurrentProperties().SurroundedBonus - targetEntity.getCurrentProperties().SurroundedDefense) * targetEntity.getSurroundedCount();
+        {
+            local malus = ::Math.max(0, user.getCurrentProperties().SurroundedBonus - targetEntity.getCurrentProperties().SurroundedDefense) * targetEntity.getSurroundedCount();
 
             if (malus)
             {
-                ret.push({
+                tooltips.push({
                     icon = "ui/tooltips/positive.png",
                     text = green(malus + "%") + " " + "Surrounded"
                 });
             }
-		}
+        } else {
+            tooltips.push({
+                icon = "ui/tooltips/warning.png",
+                text = "Immune to surrounding"
+            });
+        }
     }
+    return tooltips;
+}
 
+
+// Height-advantage
+local function getHitFactorHeightAdvantage(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     if (tile.Level < skill.m.Container.getActor().getTile().Level)
     {
-        ret.push({
+        tooltips.push({
             icon = "ui/tooltips/positive.png",
             text = green(::Const.Combat.LevelDifferenceToHitBonus + "%") + " " + "Height advantage"
         });
     }
+    return tooltips;
+}
 
+
+// Target is on bad terrain
+local function getHitFactorTargetOnBadTerrain(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     if (tile.IsBadTerrain)
     {
         local malus = skill.m.IsRanged? 25 : 25;
         if (malus > 0) {
             local attribute_name = skill.m.IsRanged? "Ranged Defense" : "Melee Defense";
-            ret.push({
+            tooltips.push({
                 icon = "ui/tooltips/positive.png",
                 text = "Target on swamp " + red("-" + malus + "%") + " " + attribute_name
             });
         }
     }
+    return tooltips;
+}
 
+
+// Fast adaptation bonus
+local function getHitFactorFastAdaptationBonus(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     if (skill.m.IsAttack)
     {
         local fast_adaptation = skill.m.Container.getSkillByID("perk.fast_adaption");
@@ -133,12 +184,22 @@ local function nested_tooltip(text, tt_type, tt_ref = null) {
         if (fast_adaptation != null && fast_adaptation.isBonusActive())
         {
             local bonus = 10 * fast_adaptation.m.Stacks;
-            ret.push({
+            tooltips.push({
                 icon = "ui/tooltips/positive.png",
                 text = green(bonus + "%") + " " + nested_tooltip(format("Fast Adaption (%i)", fast_adaptation.m.Stacks),"Skill",fast_adaptation.ClassName)
             });
         }
+    }
+    return tooltips;
+}
 
+
+// Oath of wrath
+local function getHitFactorOathOfWrath(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
+    if (skill.m.IsAttack)
+    {
         local oath = skill.m.Container.getSkillByID("trait.oath_of_wrath");
 
         if (oath != null)
@@ -149,92 +210,172 @@ local function nested_tooltip(text, tt_type, tt_ref = null) {
             if (main != null && main.isItemType(::Const.Items.ItemType.MeleeWeapon) && (main.isItemType(::Const.Items.ItemType.TwoHanded) || items.getItemAtSlot(::Const.ItemSlot.Offhand) == null && !items.hasBlockedSlot(::Const.ItemSlot.Offhand)))
             {
                 local bonus = 15
-                ret.push({
+                tooltips.push({
                     icon = "ui/tooltips/positive.png",
                     text = green(bonus + "%")+ " " + nested_tooltip("Oath of Wrath","Skill",oath.ClassName)
                 });
             }
         }
     }
+    return tooltips;
+}
 
 
+// Height disadvantage
+local function getHitFactorHeightDisadvantage(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     if (tile.Level > myTile.Level)
     {
         local levelDifference = myTile.Level - tile.Level;
-		local malus = ::Const.Combat.LevelDifferenceToHitMalus * levelDifference;
-        ret.push({
+        local malus = ::Const.Combat.LevelDifferenceToHitMalus * levelDifference;
+        tooltips.push({
             icon = "ui/tooltips/negative.png",
             text = red(malus + "%") + " " + "Height disadvantage"
         });
     }
+    return tooltips;
+}
 
+
+// Malus from bad terrain
+local function getHitFactorMalusFromBadTerrain(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     if (myTile.IsBadTerrain)
     {
         local malus = skill.m.IsRanged? 0 : 25;
         if (malus > 0) {
             local attribute_name = skill.m.IsRanged? "Ranged Skill" : "Melee Skill";
-            ret.push({
+            tooltips.push({
                 icon = "ui/tooltips/negative.png",
                 text = "On swamp " + red("-" + malus + "%") + " " + attribute_name
             });
         }
     }
+    return tooltips;
+}
 
-    local shieldBonus = 0;
-    local shield = targetEntity.getItems().getItemAtSlot(::Const.ItemSlot.Offhand);
 
-    if (shield != null && shield.isItemType(::Const.Items.ItemType.Shield))
-    {
-        shieldBonus = (skill.m.IsRanged ? shield.getRangedDefense() : shield.getMeleeDefense()) * (targetEntity.getCurrentProperties().IsSpecializedInShields ? 1.25 : 1.0);
+// Armed with shield
+local function getHitFactorArmedWithShield(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
+    if (targetEntity) {
+        local shieldBonus = 0;
+        local shield = targetEntity.getItems().getItemAtSlot(::Const.ItemSlot.Offhand);
 
-        if (skill.m.IsShieldRelevant) {
-            ret.push({
-                icon = "ui/tooltips/negative.png",
-                text = red("-" + (shieldBonus) + "%") + " " + "Armed with shield"
-            });
-        }
+        if (shield != null && shield.isItemType(::Const.Items.ItemType.Shield))
+        {
+            shieldBonus = (skill.m.IsRanged ? shield.getRangedDefense() : shield.getMeleeDefense()) * (targetEntity.getCurrentProperties().IsSpecializedInShields ? 1.25 : 1.0);
 
-        local shieldwallEffect = targetEntity.getSkills().getSkillByID("effects.shieldwall");
-        if (shieldwallEffect) {
-            local adjacencyBonus = shieldwallEffect.getBonus();
-            if (skill.m.IsShieldwallRelevant) {
-                ret.push({
+            if (skill.m.IsShieldRelevant) {
+                tooltips.push({
                     icon = "ui/tooltips/negative.png",
-                    text = red("-" + (shieldBonus) + "%") + " " + nested_tooltip("Shieldwall", "Skill", shieldwallEffect.ClassName)
+                    text = red("-" + (shieldBonus) + "%") + " " + "Armed with shield"
                 });
-                if (adjacencyBonus) {
-                    ret.push({
+            }
+
+        }
+    }
+    return tooltips;
+}
+
+
+// Shieldwall
+local function getHitFactorShieldwall(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
+    if (targetEntity) {
+        local shieldBonus = 0;
+        local shield = targetEntity.getItems().getItemAtSlot(::Const.ItemSlot.Offhand);
+
+        if (shield != null && shield.isItemType(::Const.Items.ItemType.Shield))
+        {
+            local shieldwallEffect = targetEntity.getSkills().getSkillByID("effects.shieldwall");
+            if (shieldwallEffect) {
+                local adjacencyBonus = shieldwallEffect.getBonus();
+                if (skill.m.IsShieldwallRelevant) {
+                    tooltips.push({
                         icon = "ui/tooltips/negative.png",
-                        text = red("-" + (shieldBonus) + "%") + " " + nested_tooltip("Adjacency Bonus", "Skill", shieldwallEffect.ClassName)
+                        text = red("-" + (shieldBonus) + "%") + " " + nested_tooltip("Shieldwall", "Skill", shieldwallEffect.ClassName)
                     });
+                    if (adjacencyBonus) {
+                        tooltips.push({
+                            icon = "ui/tooltips/negative.png",
+                            text = red("-" + (shieldBonus) + "%") + " " + nested_tooltip("Adjacency Bonus", "Skill", shieldwallEffect.ClassName)
+                        });
+                    }
                 }
             }
         }
     }
+    return tooltips;
+}
 
-    // Alert riposte
+
+// Alert riposte
+local function getHitFactorAlertRiposte(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     if (targetEntity && myTile.getDistanceTo(tile) <= 1 && targetEntity.getSkills().hasSkill("effects.riposte") && !skill.isIgnoringRiposte())
     {
         local riposte = targetEntity.getSkills().hasSkill("effects.riposte");
-        ret.push({
-            icon = "ui/tooltips/negative.png",
+        tooltips.push({
+            icon = "ui/tooltips/warning.png",
             text = nested_tooltip("Riposte", "Skill", riposte.ClassName)
         });
     }
+    return tooltips;
+}
 
-    // Ranged attacks: distance modifier to hitchance; blocked line-of-sight malus
+
+// Alert nine lives
+local function getHitFactorAlertNineLives(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
+    if (targetEntity && targetEntity.getSkills().hasSkill("perk.nine_lives"))
+    {
+        local nineLivesSkill = targetEntity.getSkills().getSkillByID("perk.nine_lives"); // Corrected to use targetEntity
+
+        if (nineLivesSkill != null && !nineLivesSkill.isSpent())
+        {
+            tooltips.push({
+                icon = "ui/tooltips/warning.png",
+                text = nested_tooltip("Nine lives", "Skill", nineLivesSkill.ClassName)
+            });
+        }
+    }
+    return tooltips;
+}
+
+
+// Distance modifier to hitchance
+local function getHitFactorDistanceModifier(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     if (skill.m.IsRanged)
     {
         if (targetEntity)
         {
             local propertiesWithSkill = skill.m.Container.buildPropertiesForUse(skill, targetEntity);
             local malus = (distanceToTarget - skill.m.MinRange) * propertiesWithSkill.HitChanceAdditionalWithEachTile * propertiesWithSkill.HitChanceWithEachTileMult;
-            ret.push({
+            tooltips.push({
                 icon = "ui/tooltips/negative.png",
                 text = red(malus + "%") + " " + "Distance of " + tile.getDistanceTo(user.getTile())
             });
         }
+    }
+    return tooltips;
+}
 
+
+// Blocked line-of-sight malus
+local function getHitFactorBlockedLineOfSightMalus(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
+    if (skill.m.IsRanged)
+    {
         if (skill.m.IsUsingHitchance)
         {
             local blockedTiles = ::Const.Tactical.Common.getBlockedTiles(myTile, tile, user.getFaction(), true);
@@ -244,147 +385,238 @@ local function nested_tooltip(text, tt_type, tt_ref = null) {
                 local propertiesWithSkill = skill.m.Container.buildPropertiesForUse(skill, targetEntity);
                 local blockChance = ::Const.Combat.RangedAttackBlockedChance * propertiesWithSkill.RangedAttackBlockedChanceMult;
                 blockChance = ::Math.ceil(blockChance * 100);
-                ret.push({
+                tooltips.push({
                     icon = "ui/tooltips/negative.png",
                     text = red("-" + blockChance + "%") + " " + "Line of fire blocked"
                 });
             }
         }
     }
+    return tooltips;
+}
 
+
+// Nightime modifier
+local function getHitFactorNighttimeModifier(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     if (skill.m.IsRanged && user.getCurrentProperties().IsAffectedByNight && user.getSkills().hasSkill("special.night"))
     {
-        ret.push({
+        tooltips.push({
             icon = "ui/tooltips/negative.png",
             text = "Nighttime" + " " + red("-" + 30 + "%") + " Ranged Skill"
         });
     }
+    return tooltips;
+}
 
+
+// lunge damage modifier
+local function getHitFactorLungeDamageModifier(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     if (skill.m.ID == "actives.lunge" && targetEntity) {
         local diff = getDifferenceInProperty(user, targetEntity, skill, "DamageTotalMult");
 
         if (diff > 0) {
-            ret.push({
+            tooltips.push({
                 icon = "ui/tooltips/positive.png",
                 text = "High initiative " + green(diff + "%") + " " + "Lunge damage"
             });
         }
         if (diff < 0) {
-            ret.push({
-                icon = "ui/tooltips/negative.png",
+            tooltips.push({
+                icon = "ui/tooltips/negative.png":
                 text = "Low initiative " + red("-" + (-diff) + "%") + " " + "Lunge damage"
             });
         }
     }
+    return tooltips;
+}
 
-    // Damage resistance
+
+// Damage resistance
+local function getHitFactorDamageResistance(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     if (targetEntity) {
         local damage_reduction_skills = [
-			"racial.skeleton",
-			"racial.golem",
-			"racial.serpent",
-			"racial.alp",
-			"racial.schrat",
+            "racial.skeleton",
+            "racial.golem",
+            "racial.serpent",
+            "racial.alp",
+            "racial.schrat",
             "perk.nimble",
             "perk.battle_forged"
-		];
-		local damage_reduction_skill;
+        ];
+        local damage_reduction_skill;
 
-		for(local i = 0; i < damage_reduction_skills.len(); i++)
-		{
-			damage_reduction_skill = targetEntity.getSkills().getSkillByID(damage_reduction_skills[i]);
+        for(local i = 0; i < damage_reduction_skills.len(); i++)
+        {
+            damage_reduction_skill = targetEntity.getSkills().getSkillByID(damage_reduction_skills[i]);
 
-			if (damage_reduction_skill)
-			{
+            if (damage_reduction_skill)
+            {
                 local damage_reduction_skill_tt = "";
                 if ("getTooltip" in damage_reduction_skill) {
                     damage_reduction_skill_tt = nested_tooltip(damage_reduction_skill.getName(), "Skill", damage_reduction_skill.ClassName) + " ";
                 }
-				local propertiesBefore = targetEntity.getCurrentProperties();
+                local propertiesBefore = targetEntity.getCurrentProperties();
                 local hitInfo = clone ::Const.Tactical.HitInfo;
                 local propertiesAfter = propertiesBefore.getClone();
                 damage_reduction_skill.onBeforeDamageReceived(user, skill, hitInfo, propertiesAfter);
 
-                // TODO: refactor this into a for loop over checked properties
-                if ("DamageReceivedRegularMult" in propertiesBefore) {
-                    local description = "HP damage";
-                    local diff = propertiesBefore.DamageReceivedRegularMult - propertiesAfter.DamageReceivedRegularMult;
-                    diff = ::Math.ceil(diff * 100);
+                local paired_properties_description = [
+                    ["DamageReceivedRegularMult", "HP damage"],
+                    ["DamageReceivedArmorMult", "Armor damage"]
+                ]
+                foreach (paired_info in paired_properties_description) {
+                    local property_name = paired_info[0];
+                    local description = paired_info[1];
 
-                    if (diff > 0) {
-                        ret.push({
-                            icon = "ui/tooltips/positive.png",
-                            text = damage_reduction_skill_tt + green(diff + "%") + " " + description
-                        });
-                    }
+                    if (property_name in propertiesBefore) {
+                        local diff = propertiesBefore[property_name] - propertiesAfter[property_name]
+                        diff = ::Math.ceil(diff * 100);
 
-                    if (diff < 0) {
-                        ret.push({
-                            icon = "ui/tooltips/negative.png",
-                            text = damage_reduction_skill_tt + " " + red("-" + (-diff) + "%") + " " + description
-                        });
-                    }
-                }
-                if ("DamageReceivedArmorMult" in propertiesBefore) {
-                    local description = "Armor damage";
-                    local diff = propertiesBefore.DamageReceivedArmorMult - propertiesAfter.DamageReceivedArmorMult;
-                    diff = ::Math.ceil(diff * 100);
+                        if (diff > 0) {
+                            tooltips.push({
+                                icon = "ui/tooltips/positive.png",
+                                text = damage_reduction_skill_tt + green(diff + "%") + " " + description
+                            });
+                        }
 
-                    if (diff > 0) {
-                        ret.push({
-                            icon = "ui/tooltips/positive.png",
-                            text = damage_reduction_skill_tt + " " + green(diff + "%") + " " + description
-                        });
-                    }
-
-                    if (diff < 0) {
-                        ret.push({
-                            icon = "ui/tooltips/negative.png",
-                            text = damage_reduction_skill_tt + " " + red("-" + (-diff) + "%") + " " + description
-                        });
+                        if (diff < 0) {
+                            tooltips.push({
+                                icon = "ui/tooltips/negative.png",
+                                text = damage_reduction_skill_tt + " " + red("-" + (-diff) + "%") + " " + description
+                            });
+                        }
                     }
                 }
-
-			}
-		}
+            }
+        }
     }
+    return tooltips;
+}
 
-    // Immunities
+
+// Immunity: stun
+local function getHitFactorImmunityStun(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
     if (targetEntity) {
         if (targetEntity.getCurrentProperties().IsImmuneToStun && (skill.m.ID == "actives.knock_out" || skill.m.ID == "actives.knock_over" || skill.m.ID == "actives.strike_down"))
         {
-            ret.push({
-                icon = "ui/tooltips/negative.png",
+            tooltips.push({
+                icon = "ui/tooltips/warning.png",
                 text = "Immune to stun"
             });
         }
+    }
+    return tooltips;
+}
 
+
+// Immunity: root
+local function getHitFactorImmunityRoot(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
+    if (targetEntity) {
         if (targetEntity.getCurrentProperties().IsImmuneToRoot && skill.m.ID == "actives.throw_net")
         {
-            ret.push({
-                icon = "ui/tooltips/negative.png",
+            tooltips.push({
+                icon = "ui/tooltips/warning.png",
                 text = "Immune to being rooted"
             });
         }
+    }
+    return tooltips;
+}
 
+
+// Immunity: disarmed
+local function getHitFactorImmunityDisarmed(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
+    if (targetEntity) {
         if ((targetEntity.getCurrentProperties().IsImmuneToDisarm || targetEntity.getItems().getItemAtSlot(::Const.ItemSlot.Mainhand) == null) && skill.m.ID == "actives.disarm")
         {
-            ret.push({
-                icon = "ui/tooltips/negative.png",
+            tooltips.push({
+                icon = "ui/tooltips/warning.png",
                 text = "Immune to being disarmed"
             });
         }
+    }
+    return tooltips;
+}
 
+
+// Immunity: forced movement
+local function getHitFactorImmunityForcedMovement(skill, tile, user, myTile, targetEntity, distanceToTarget)
+{
+    local tooltips = [];
+    if (targetEntity) {
         if (targetEntity.getCurrentProperties().IsImmuneToKnockBackAndGrab && (skill.m.ID == "actives.knock_back" || skill.m.ID == "actives.hook" || skill.m.ID == "actives.repel"))
         {
-            ret.push({
-                icon = "ui/tooltips/negative.png",
+            tooltips.push({
+                icon = "ui/tooltips/warning.png",
                 text = "Immune to being knocked back or hooked"
             });
         }
     }
+    return tooltips;
+}
 
-    return ret;
+::ModMaxiTooltips.TacticalTooltip.hit_factors_tooltip_list = [
+    // Alerts for skills
+    getHitFactorAlertNineLives,
+    getHitFactorAlertRiposte,
+
+    // Other alerts
+    getHitFactorDamageResistance,
+    getHitFactorImmunityStun,
+    getHitFactorImmunityRoot,
+    getHitFactorImmunityDisarmed,
+    getHitFactorImmunityForcedMovement,
+
+    // Lunge modifier
+    getHitFactorLungeDamageModifier,
+
+    // Hit chance bonus
+    getHitFactorSkillHitChanceBonus,
+    getHitFactorSkillHitChanceModifier,
+    getHitFactorBonusFromSurrounding,
+    getHitFactorHeightAdvantage,
+    getHitFactorTargetOnBadTerrain,
+    getHitFactorFastAdaptationBonus,
+    getHitFactorOathOfWrath,
+
+    // Maluses
+    getHitFactorSkillTooCloseMalus,
+    getHitFactorSkillUniversalMalus,
+    getHitFactorHeightDisadvantage,
+    getHitFactorMalusFromBadTerrain,
+    getHitFactorArmedWithShield,
+    getHitFactorShieldwall,
+    getHitFactorDistanceModifier,
+    getHitFactorBlockedLineOfSightMalus,
+    getHitFactorNighttimeModifier
+]
+
+
+::ModMaxiTooltips.TacticalTooltip.getHitFactors <- function (skill, tile)
+{
+    local ret = [];
+    local user = skill.m.Container.getActor();
+    local myTile = user.getTile();
+    local targetEntity = tile.IsOccupiedByActor ? tile.getEntity() : null;
+    local distanceToTarget = user.getTile().getDistanceTo(tile);
+
+    foreach (single_tooltip_function in ::ModMaxiTooltips.TacticalTooltip.hit_factors_tooltip_list) {
+        ret.extend(single_tooltip_function(skill, tile, user, myTile, targetEntity, distanceToTarget));
+    }
+
+    return ret
 }
 
 
