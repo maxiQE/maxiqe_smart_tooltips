@@ -570,7 +570,7 @@ local function interval(a, b, n) {
     local kill_chance = (head_hit_chance * summary_head.kill_proba + (100 - head_hit_chance) * summary_body.kill_proba);
 
     local hitchance = skill.getHitchance(target);
-    local marginal_kill_chance = info.kill_chance * hitchance / 100;
+    local marginal_kill_chance = kill_chance * hitchance / 100;
 
     summary_head.hit_chance = head_hit_chance;
     summary_body.hit_chance = 100 - head_hit_chance;

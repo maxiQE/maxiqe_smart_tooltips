@@ -11,7 +11,7 @@
 local queueLoadOrder = [">mod_msu", ">mod_modern_hooks", ">mod_nested_tooltips"];
 
 ::ModMaxiTooltips.ModHook <- ::Hooks.register(::ModMaxiTooltips.ID, ::ModMaxiTooltips.Version, ::ModMaxiTooltips.Name);
-::ModMaxiTooltips.ModHook.require("mod_msu >= 1.2.7", "mod_modern_hooks >= 0.4.10");
+::ModMaxiTooltips.ModHook.require("mod_msu >= 1.2.7", "mod_modern_hooks >= 0.4.10", "mod_nested_tooltips >= 0.2.0");
 ::ModMaxiTooltips.ModHook.queue(queueLoadOrder, function()
 {
 	// Declare mod

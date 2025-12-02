@@ -49,6 +49,8 @@
 
 - $ re-add armor break info
 
+
+
 - hit factors: code improvements
     - ? util functions:
         - show value: function(val: number) -> color, display +%

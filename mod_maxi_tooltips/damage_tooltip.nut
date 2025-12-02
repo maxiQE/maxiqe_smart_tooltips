@@ -16,7 +16,8 @@ local function is_close(value1, value2)
 local function tablesAreEqual(table1, table2) {
     // Check if both inputs are tables
     foreach (key, value in table1) {
-        if (!table2.rawin(key) || !is_close(table1[key], table2[key]) ) {
+        if (key == "hitchance") {}  // ignore hitchance!
+        else if (!table2.rawin(key) || !is_close(table1[key], table2[key]) ) {
             return false;
         }
     }
@@ -68,65 +69,75 @@ local function attack_info_tooltip__kill_chance(conditional_kill_proba, marginal
 // body_armor: float[0, inf] | None
 // hitchance: float[0, 100]
 // hitchance_icon: str
-local function attack_info_tooltip_line_5(kill_proba, health_value, head_armor, body_armor, hitchance, hitchance_icon)
+local function attack_info_tooltip_line_5(info, hitchance_icon)
 {
-        local text_tooltip = "<div class='maxi-damage-tooltip'>";
+    local kill_proba = info.health_damage;
+    local health_value = info.body_armor_damage;
+    local head_armor = info.head_armor_damage;
+    local body_armor = info.body_armor_damage;
+    local hitchance = info.hit_chance;
 
-        if (kill_proba) {
-            kill_proba = ::Math.round(100 * kill_proba);
-            if (kill_proba > 0) {
-                text_tooltip += tooltip_fragment("maxi_tt_kill_given_hit.png", kill_proba);
-            } else {
-                text_tooltip += missing_value();
-            }
+    local text_tooltip = "<div class='maxi-damage-tooltip'>";
+
+    if (kill_proba) {
+        kill_proba = ::Math.round(100 * kill_proba);
+        if (kill_proba > 0) {
+            text_tooltip += tooltip_fragment("maxi_tt_kill_given_hit.png", kill_proba);
         } else {
-            text_tooltip += missing_value()
+            text_tooltip += missing_value();
         }
+    } else {
+        text_tooltip += missing_value()
+    }
 
-        if (health_value) {
-            health_value = ::Math.round(health_value);
-            if (health_value > 0) {
-                text_tooltip += tooltip_fragment("maxi_tt_health_damage.png", health_value);
-            } else {
-                text_tooltip += missing_value();
-            }
+    if (health_value) {
+        health_value = ::Math.round(health_value);
+        if (health_value > 0) {
+            text_tooltip += tooltip_fragment("maxi_tt_health_damage.png", health_value);
         } else {
-            text_tooltip += missing_value()
+            text_tooltip += missing_value();
         }
+    } else {
+        text_tooltip += missing_value()
+    }
 
-        if (head_armor) {
-            head_armor = ::Math.round(head_armor);
-            if (head_armor > 0) {
-                text_tooltip += tooltip_fragment("maxi_tt_head_armor_damage.png", head_armor);
-            } else {
-                text_tooltip += missing_value();
-            }
+    if (head_armor) {
+        head_armor = ::Math.round(head_armor);
+        if (head_armor > 0) {
+            text_tooltip += tooltip_fragment("maxi_tt_head_armor_damage.png", head_armor);
         } else {
-            text_tooltip += missing_value()
+            text_tooltip += missing_value();
         }
+    } else {
+        text_tooltip += missing_value()
+    }
 
-        if (body_armor) {
-            body_armor = ::Math.round(body_armor);
-            if (body_armor > 0) {
-                text_tooltip += tooltip_fragment("maxi_tt_body_armor_damage.png", body_armor);
-            } else {
-                text_tooltip += missing_value();
-            }
+    if (body_armor) {
+        body_armor = ::Math.round(body_armor);
+        if (body_armor > 0) {
+            text_tooltip += tooltip_fragment("maxi_tt_body_armor_damage.png", body_armor);
         } else {
-            text_tooltip += missing_value()
+            text_tooltip += missing_value();
         }
+    } else {
+        text_tooltip += missing_value()
+    }
 
-        text_tooltip += tooltip_fragment(hitchance_icon, hitchance);
+    text_tooltip += tooltip_fragment(hitchance_icon, hitchance);
 
-        text_tooltip += "</div>"
+    text_tooltip += "</div>"
 
-        return text_tooltip
+    return text_tooltip
 }
 
 
 local function attack_info_tooltip__calculation_time(time, name)
 {
-    return "<div> " + tooltip_fragment("maxi_tt_calculation_time.png", time) + "ms </div>"
+    return {
+        type = "text",
+        text = "<div> " + tooltip_fragment("maxi_tt_calculation_time.png", time) + "ms </div>",
+        rawHTMLInText = true
+    }
 }
 
 
@@ -140,7 +151,6 @@ local function tooltip_from_info(info, calculation_time, info_keys, icons)
             type = "text",
             text = attack_info_tooltip__calculation_time(calculation_time, "Calculation time")
     })
-
 
     if (info.kill_chance >= 1)
     {
@@ -183,6 +193,7 @@ local function tooltip_from_info(info, calculation_time, info_keys, icons)
 
     }
 
+    return tooltip
 }
 
 
@@ -199,18 +210,18 @@ local function tooltip_from_info(info, calculation_time, info_keys, icons)
     if (skill.getID() == "actives.split_man") {
         info = ::ModMaxiTooltips.TacticalTooltip.split_man_summary__monte_carlo(attacker, target, skill);
         info_keys = ["head", "body"];
-        icons = ["maxi_tt_splitman_head_hit_chance", "maxi_tt_splitman_body_hit_chance"];
+        icons = ["maxi_tt_splitman_head_hit_chance.png", "maxi_tt_splitman_body_hit_chance.png"];
     } else if (num_attacks >= 2) {
         info = ::ModMaxiTooltips.TacticalTooltip.multi_hit_summary__monte_carlo(attacker, target, skill);
         info_keys = ["head", "body"];
-        icons = ["maxi_tt_multihit_head_hit_chance", "maxi_tt_multihit_body_hit_chance", "maxi_tt_num_hits_2_hit_chance", "maxi_tt_num_hits_3_hit_chance"];
+        icons = ["maxi_tt_multihit_head_hit_chance.png", "maxi_tt_multihit_body_hit_chance.png", "maxi_tt_num_hits_2_hit_chance.png", "maxi_tt_num_hits_3_hit_chance.png"];
         for (local num_hits = 1; num_hits < num_attacks; num_hits++) {
             info_keys.push(num_hits);
         }
     } else {
         info = ::ModMaxiTooltips.TacticalTooltip.attack_info_summary_from_parameters__smartfast(attacker, target, skill);
         info_keys = ["head", "body"];
-        icons = ["maxi_tt_head_hit_chance", "maxi_tt_body_hit_chance"];
+        icons = ["maxi_tt_head_hit_chance.png", "maxi_tt_body_hit_chance.png"];
     }
 
     local calculation_time = ::MSU.Utils.Timer("maxi tt timer").silentStop();
@@ -223,10 +234,13 @@ local function tooltip_from_info(info, calculation_time, info_keys, icons)
 
         info = ::ModMaxiTooltips.TacticalTooltip.multi_hit_summary__monte_carlo(attacker, target, skill);
         info_keys = ["head", "body"];
-        icons = ["maxi_tt_head_hit_chance", "maxi_tt_body_hit_chance"];
+        icons = ["maxi_tt_head_hit_chance.png", "maxi_tt_body_hit_chance.png"];
 
         calculation_time = ::MSU.Utils.Timer("maxi tt timer").silentStop();
-        marginal_kill_chance = info.kill_chance * hitchance / 100;
+
+        // Restoring kill_chance since there is only a single hit
+        local hitchance = skill.getHitchance(target);
+        info.kill_chance = info.marginal_kill_chance / hitchance * 100;
 
         tooltip.extend(tooltip_from_info(info, calculation_time, info_keys, icons));
     }

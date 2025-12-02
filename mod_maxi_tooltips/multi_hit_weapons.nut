@@ -214,7 +214,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
     local kill_chance = (head_hit_chance * summary_res.head.kill_proba + (100 - head_hit_chance) * summary_res.body.kill_proba);
 
     local hitchance = skill.getHitchance(target);
-    local marginal_kill_chance = info.kill_chance * hitchance / 100;
+    local marginal_kill_chance = kill_chance * hitchance / 100;
 
     return {
         body=summary_res["body"],
@@ -229,8 +229,12 @@ class FactorialCache {
     _cache = [1, 1];
 
     function get(n) {
-        for (local i = max_cached + 1; i <= n; i++) {
-            new_val = _cache[i-1] * i;
+        if (n < _cache.len()) {
+            return _cache[n]
+        }
+
+        for (local i = _cache.len(); i <= n; i++) {
+            local new_val = _cache[i-1] * i;
             _cache.push(new_val);
         }
 
@@ -239,11 +243,15 @@ class FactorialCache {
 }
 
 
-fact_cache = FactorialCache();
+local fact_cache = FactorialCache();
 
 
 // Compute the probability of scoring 0-hits, 1-hit, etc
-// Return an array with the probabilities
+// Return an array with the probabilities of each possibility, normalized to 0-1
+//
+// For example
+// compute_hit_distribution(0.5, 2)
+// [0.25, 0.5, 0.25]
 local function compute_hit_distribution(hitchance, num_attacks) {
     local res = [];
     for (local num_hits = 0; num_hits <= num_attacks; num_hits++) {
@@ -362,16 +370,18 @@ local function compute_hit_distribution(hitchance, num_attacks) {
 
     local marginal_kill_chance = 0;
 
+    // Misleading name: actual number of hits is "num_hits + 1"
     for (local num_hits = 0; num_hits < num_attacks; num_hits++) {
+        local hit_chance = hit_distribution[num_hits+1] * 100;
         res[num_hits] <- ({
             num_hits=num_hits+1,
             health_damage=health_damage[num_hits].value(),
             body_armor_damage=body_armor_damage[num_hits].value(),
             head_armor_damage=head_armor_damage[num_hits].value(),
             kill_proba=kill_proba[num_hits].value(),
-            hit_chance=hit_distribution[num_hits] * 100
+            hit_chance=hit_chance
         });
-        marginal_kill_chance = marginal_kill_chance + kill_proba[num_hits].value() * hit_distribution[num_hits] * 100
+        marginal_kill_chance = marginal_kill_chance + hit_chance;
     }
 
     foreach (key in ["body", "head"]) {
@@ -380,12 +390,12 @@ local function compute_hit_distribution(hitchance, num_attacks) {
             body_armor_damage=body_armor_damage[key].value(),
             head_armor_damage=head_armor_damage[key].value(),
             kill_proba=kill_proba[key].value(),
-            hit_chance=hit_distribution[0] * (key == "head"? head_hit_chance : 100 - head_hit_chance)
+            hit_chance=hit_distribution[1] * (key == "head"? head_hit_chance : 100 - head_hit_chance)
         }
     }
 
     res.marginal_kill_chance <- marginal_kill_chance;
-    res.kill_chance = null;
+    res.kill_chance <- null;
 
     return res;
 }
