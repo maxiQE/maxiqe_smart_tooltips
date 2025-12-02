@@ -2,10 +2,15 @@
 
 ## Todo
 
-- x replace random with custom RNG that can be seeded easily without interfering with external RNG
+- missing icons
+
+- cap health and armor damage to actual values??
+
+- re-add armor break info?
+
 
 - hit factors: visual improvements
-    - add warning icons
+
     - clearly separate sections
 
 - menu control
@@ -16,7 +21,7 @@
     - ? util functions:
         - show value: function(val: number) -> color, display +%
         - tooltip line: icon name, content
-    - improve code for immunities
+    - ^^ improve code for immunities
 
 - bugs:
     - "Perk+" tooltips not working?

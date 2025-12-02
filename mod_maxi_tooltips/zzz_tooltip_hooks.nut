@@ -16,3 +16,11 @@
 
 });
 
+::ModMaxiTooltips.ModHook.hook("scripts/skills/skill", function(q) {
+
+    q.getHitFactors = @(__original) function(tile) {
+        return ::ModMaxiTooltips.TacticalTooltip.getHitFactors(this, tile)
+    }
+
+});
+

@@ -166,11 +166,11 @@ local function attack_info_tooltip_line_5(kill_proba, health_value, head_armor, 
 
 // Skill names of attacks with multiple hits
 // Expose so that this can be modified by external mods
-::ModMaxiTooltips.TacticalTooltip.three_hit_skills = [
+::ModMaxiTooltips.TacticalTooltip.three_hit_skills <- [
     "actives.cascade",
     "actives.hail"
 ];
-::ModMaxiTooltips.TacticalTooltip.two_hit_skills = [
+::ModMaxiTooltips.TacticalTooltip.two_hit_skills <- [
 ];
 
 
@@ -224,35 +224,36 @@ local function compute_hit_distribution(hitchance, num_attacks) {
 
     local tooltip = [];
 
-    {
+
+    tooltip.push({
+            type = "text",
+            text = "Monte-Carlo calculation; " + ::Math.round(delta_exact) + " ms"
+    })
+
+    // Normalized to 0-1
+    local marginal_kill_proba = 0;
+    for (local num_hits = 0; num_hits < num_attacks; num_hits++) {
+        marginal_kill_proba += summary_info_mc[num_hits].kill_proba * hit_distribution[num_hits+1];
+    }
+    // Normalized to 0-100
+    marginal_kill_proba *= 100;
+
+    // Using Monte-Carlo simulation for a standard attack
+    if (num_attacks == 1) {
+        local conditional_kill_proba = summary_info_mc.head.kill_proba * head_hit_chance + summary_info_mc.head.kill_proba * (100 - head_hit_chance);
+        local text_kill = "<div class='maxi-damage-tooltip'>";
+        text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", conditional_kill_proba);
+        text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", marginal_kill_proba);
+        text_kill += "</div>"
         tooltip.push({
-                type = "text",
-                text = "Monte-Carlo multi-hit calculation; " + ::Math.round(delta_exact) + " ms"
+            type = "text",
+            text = text_kill,
+            rawHTMLInText = true
         })
-
-        // Normalized to 0-1
-        local marginal_kill_proba = 0;
-        for (local num_hits = 0; num_hits < num_attacks; num_hits++) {
-            marginal_kill_proba += summary_info_mc[num_hits].kill_proba * hit_distribution[num_hits+1];
-        }
-        // Normalized to 0-100
-        marginal_kill_proba *= 100;
-
-        {
-            local text_kill = "<div class='maxi-damage-tooltip'>";
-            text_kill += missing_value();
-            text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", marginal_kill_proba);
-            text_kill += "</div>"
-            tooltip.push({
-                type = "text",
-                text = text_kill,
-                rawHTMLInText = true
-            })
-        }
 
         foreach (key in ["head", "body"]) {
             local icon_name = key == "head"? "maxi_tt_multihit_head_hit_chance.png" : "maxi_tt_multihit_body_hit_chance.png";
-            local hit_chance = hit_distribution[1] * (key == "head"? head_hit_chance : 100 - head_hit_chance);
+            local hit_chance = (key == "head"? head_hit_chance : 100 - head_hit_chance);
             tooltip.push({
                 type = "text",
                 text = attack_info_tooltip_line_5(
@@ -267,7 +268,19 @@ local function compute_hit_distribution(hitchance, num_attacks) {
             })
         }
 
-        for (local num_hits = 1; num_hits < num_attacks; num_hits++) {
+    // Standard multi-hit attack tooltip
+    } else {
+        local text_kill = "<div class='maxi-damage-tooltip'>";
+        text_kill += missing_value();
+        text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", marginal_kill_proba);
+        text_kill += "</div>"
+        tooltip.push({
+            type = "text",
+            text = text_kill,
+            rawHTMLInText = true
+        })
+
+        for (local num_hits = 0; num_hits < num_attacks; num_hits++) {
             local icon_name = format("maxi_tt_num_hits_%x.png", num_hits + 1)
             local total_armor_damage = summary_info_mc[num_hits].body_armor_damage + summary_info_mc[num_hits].head_armor_damage;
             tooltip.push({
@@ -332,9 +345,7 @@ local function compute_hit_distribution(hitchance, num_attacks) {
 
         // Check if we should show a single info line
         local show_single_line = (
-            info.target.head_armor == 0
-            && info.target.body_armor == 0
-            && tablesAreEqual(info.distribution_head_health, info.distribution_body_health)
+            tablesAreEqual(summary_info_mc.summary_head, summary_info_mc.summary_body)
         );
 
         // Show a single damage line: taking from body

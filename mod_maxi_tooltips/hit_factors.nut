@@ -76,7 +76,7 @@ local function getHitFactorSkillTooCloseMalus(skill, tile, user, myTile, targetE
 local function getHitFactorSkillUniversalMalus(skill, tile, user, myTile, targetEntity, distanceToTarget)
 {
     local tooltips = [];
-    else if (skill.m.HitChanceBonus < 0)
+    if (!skill.m.IsTooCloseShown && skill.m.HitChanceBonus < 0)
     {
         tooltips.push({
             icon = "ui/tooltips/negative.png",
@@ -426,7 +426,7 @@ local function getHitFactorLungeDamageModifier(skill, tile, user, myTile, target
         }
         if (diff < 0) {
             tooltips.push({
-                icon = "ui/tooltips/negative.png":
+                icon = "ui/tooltips/negative.png",
                 text = "Low initiative " + red("-" + (-diff) + "%") + " " + "Lunge damage"
             });
         }
@@ -567,7 +567,7 @@ local function getHitFactorImmunityForcedMovement(skill, tile, user, myTile, tar
     return tooltips;
 }
 
-::ModMaxiTooltips.TacticalTooltip.hit_factors_tooltip_list = [
+::ModMaxiTooltips.TacticalTooltip.hit_factors_tooltip_list <- [
     // Alerts for skills
     getHitFactorAlertNineLives,
     getHitFactorAlertRiposte,
@@ -601,7 +601,7 @@ local function getHitFactorImmunityForcedMovement(skill, tile, user, myTile, tar
     getHitFactorDistanceModifier,
     getHitFactorBlockedLineOfSightMalus,
     getHitFactorNighttimeModifier
-]
+];
 
 
 ::ModMaxiTooltips.TacticalTooltip.getHitFactors <- function (skill, tile)
@@ -618,12 +618,3 @@ local function getHitFactorImmunityForcedMovement(skill, tile, user, myTile, tar
 
     return ret
 }
-
-
-::ModMaxiTooltips.ModHook.hook("scripts/skills/skill", function(q) {
-
-    q.getHitFactors = @(__original) function(tile) {
-        return ::ModMaxiTooltips.TacticalTooltip.getHitFactors(this, tile)
-    }
-
-});

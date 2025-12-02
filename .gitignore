@@ -1,3 +1,5 @@
+install_script.bash
+nohup.out
 *.sublime-workspace
 *.sublime-project
 .vscode/

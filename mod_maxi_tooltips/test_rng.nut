@@ -168,9 +168,9 @@ function test_correlation(min, max) {
                  TEST_SAMPLE_SIZE, correlation, CORR_TOLERANCE));
 
     if (passed) {
-        ::ModMaxiTooltips.Mod.Debug.printError("    [PASS] Correlation (%.4f) is close to 0, suggesting low linear dependence.", correlation);
+        ::ModMaxiTooltips.Mod.Debug.printError(format("    [PASS] Correlation (%.4f) is close to 0, suggesting low linear dependence.", correlation));
     } else {
-        ::ModMaxiTooltips.Mod.Debug.printError("    [FAIL] Correlation (%.4f) is too high, suggesting non-random behavior.", correlation);
+        ::ModMaxiTooltips.Mod.Debug.printError(format("    [FAIL] Correlation (%.4f) is too high, suggesting non-random behavior.", correlation));
     }
     return passed;
 }
@@ -208,3 +208,5 @@ function run_all_tests() {
     test_reproducibility(min3, max3);
     test_correlation(min3, max3);
 }
+
+run_all_tests();

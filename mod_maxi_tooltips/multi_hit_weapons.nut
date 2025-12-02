@@ -27,13 +27,13 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 }
 
 
-::ModMaxiTooltips.TacticalTooltip.CustomRNG <- class CustomRNG {
+::ModMaxiTooltips.TacticalTooltip.CustomRNG <- class {
     _state = 1;
 
     // Constants for a 32-bit LCG
-    const MULTIPLIER = 1664525;
-    const INCREMENT = 1013904223;
-    const MAX_VAL = 4294967296.0; // 2^32 as a float
+    MULTIPLIER = 1664525;
+    INCREMENT = 1013904223;
+    MAX_VAL = 4294967296.0; // 2^32 as a float
 
     // Custom constructor with input seed
     constructor(seed) {
@@ -90,8 +90,6 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 //
 // <!> Summaries are slightly different since the attack hits both body parts <!>
 ::ModMaxiTooltips.TacticalTooltip.split_man_summary__monte_carlo <- function (parameters_body, parameters_head) {
-    local rng = ::ModMaxiTooltips.TacticalTooltip.CustomRNG(123456);
-
     local start_health = parameters_body.health;
     local start_armor = {
         body=parameters_body.armor,
@@ -128,6 +126,9 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 
         local secondary_hit_body_part = initial_hit_body_part == "body" ? "head": "body";
 
+        // Ensure same hits on both halves of the body
+        local rng = ::ModMaxiTooltips.TacticalTooltip.CustomRNG(123456);
+
         for (local repeat = 0; repeat < num_repeats; repeat++) {
             // Reset health and armor
             foreach (hit_type_temp in ["main", "secondary"]) {
@@ -162,14 +163,14 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
             }
 
             // After both hit_type have resolved, update accumulators
-            health_damage.update(start_health - parameters_secondary_hit.health);
-            body_armor_damage.update(start_body_armor - parameters_body.armor);
-            head_armor_damage.update(start_head_armor - parameters_secondary_hit.armor);
-            kill_proba.update(parameters_secondary_hit.health <= 0);
+            health_damage.update(start_health - all_parameters.main.body.health);
+            body_armor_damage.update(start_armor.body - all_parameters.main.body.armor);
+            head_armor_damage.update(start_armor.head - all_parameters.main.head.armor);
+            kill_proba.update(all_parameters.main.body.health <= 0);
         }
 
         // After all repeats, create summary
-        summary_res[initial_hit_body_part] = {
+        summary_res[initial_hit_body_part] <- {
             health_damage=health_damage.value(),
             body_armor_damage=body_armor_damage.value(),
             head_armor_damage=head_armor_damage.value(),

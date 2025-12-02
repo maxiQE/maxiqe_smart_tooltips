@@ -518,7 +518,7 @@ local function interval(a, b, n) {
 
     // The point budget is large enough: do not restrict armor_roll at all
     if (maximum_sampling_points >= damage_range_length * damage_range_length) {
-        armor_roll_number_of_points = ::Math.ceil(::Math.sqrt(maximum_sampling_points));
+        armor_roll_number_of_points = damage_range_length;
     }
 
     local armor_destroy_res = ::ModMaxiTooltips.TacticalTooltip.armor_destroy_from_params(parameters, armor_roll_number_of_points);
