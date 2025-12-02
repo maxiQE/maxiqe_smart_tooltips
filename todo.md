@@ -4,40 +4,57 @@
 
 - MSU: enable RawHtml in all tooltips
 
-- use single-line 5 element tooltip everywhere
+- x include hit factors
+    - done, via direct copying of built-in hit-factors + reference mod
 
-- simplify the general case:
-    - in exact, use linspace and range as appropriate
-    - compare exact, some params, MC
+- add first line head / body distinction in multi-hit MC
 
-- include hit factors
+- tests:
+    - check attack tooltip in various conditions
+    - check gash skill
+    - 
 
-- custom icons add concept tooltips to all icons
-    - x tooltips
-    - icons
+- hit factors: visual improvements
+    - icons?
+    - clearly separate sections
+    - clear alerts for immunities and 9lives
 
-## Damage linearity
+- hit factors: code improvements
+    - add nine lives
+    - separate function for each section
+    - util functions
+    - separate function for each line
+    - improve code for immunities
+    - improve damage reduction code
 
-- If there is no armor, damage is linear
-- If the attack cannot break armor, damage is linear
-- If the attack always breaks armor:
-    - armor damage is fixed
-    - first batch is linear
-    - second batch is linear with a potential spike at 0 for low damage rolls
-- If breaking armor is random:
-    - armor damage is linear + spike at current armor
-    - first batch is linear in two parts, conditional on whether armor is broken or not
-    - second batch is linear in three parts:
-        - no armor break: 0
-        - armor break but insufficient health damage: 0
-        - armor break + sufficient damage
+- bugs:
+    - "Perk+" tooltips not working?
+        - check if it works in legends?
+    - Rounding error difference between the two smartfast calculations somehow
+        - check details of code?
 
-- 4 point linear approximation is decent
-- 9 point linear estimation should be even better
-- check against MCMC
-- check against grouped approximations
+- menu control
 
-## Tests
+## Smartfast estimation
+
+- Decompose interval of rolls for armor damage into:
+    - those that destroy armor: represent as a single point
+    - the others: represent them using an interval of values
+    - use at most 7 values to represent everything by default
+
+- Represent the interval of rolls for health with 100 / armor_array.len()
+
+- use that distribution as an approximation for the real one
+
+## MonteCarlo
+
+- Just roll 100 samples
+- Compute the empirical average
+
+- for multi-hit: condition on the number of hits
+- for split-man: condition on where the initial hit lands: head or body
+
+## Manual Tests
 
 Use the combat simulator mod from taro
 
@@ -46,44 +63,6 @@ Use the combat simulator mod from taro
 - Test weapons with split man
 - Test the multi-hit weapons
 
-## Reference
-
-- Tooltips are constructed by data_001\ui\screens\tooltip\modules\tooltip_module.js
-
-## Good icons
-
-- kills.png : nice skull; show chance to kill?
-- difficulty_easy.png : another nice skull
-- obituary.png : another nice skull
-- direct_damage.png : show armor_penetrating attack
-- health.png
-- shield_damage.png
-- warning.png
-
-## Damage cases
-
-- If there's no armor and the damage coefficients are the same, then hits to body and head are the same
-    - show a single line with no hit-chance
-- If it's a hit that's guaranteed to land on head or body, don't show the 0% line; do show hit chance on the other line; bold?
-- Cap values at when they reach current armor / health
-- Show when a value destroys armor / kills; bold?
-- order considerations:
-    - Health damage is more important than armor: show first or last?
-    - Is the hit chance the less important value?
-    - show HD, AD, hitchance?
-- show injury threshold somewhere : not in that section; after attributes? modify it with skill (bold?)
-- show health and armor? don't show
-- multiple attacks:
-    - split man:
-        - either both halves hit or none
-        - 4 rolls
-        - two cases, main part goes to head or body
-        - head tooltip: health-damage min - max; armor-damage min - max; head hit chance
-        - body tooltip: HD min - max; body middle; head middle; body hit chance
-    - flails:
-        - hits are "independent"
-        - show normal line
-        - add indicator of the number of hits: `2X`, `3X`
 
 ## Wishlist
 

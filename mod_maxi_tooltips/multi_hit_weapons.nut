@@ -189,7 +189,14 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
         kill_proba.push(::ModMaxiTooltips.TacticalTooltip.MeanCalculator());
     }
 
-    local num_repeats = 100;
+    foreach (key in ["body", "head"]) {
+        health_damage[key] <- ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
+        body_armor_damage[key] <- ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
+        head_armor_damage[key] <- ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
+        kill_proba[key] <- ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
+    }
+
+    local num_repeats = 400;
 
     for (local repeat = 0; repeat < num_repeats; repeat++) {
         // Reset health and armor
@@ -201,9 +208,17 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
         for (local num_hits = 0; num_hits < num_attacks; num_hits++) {
             {
                 local attacked_parameters;
-                if (::Math.rand(1, 100) <= head_hit_chance) {
+                local attack_key = null;
+                local first_roll = ::Math.rand(1, 100);
+                // Make first roll deterministic to split evenly between head and body attacks
+                if (repeat == 0) {
+                    first_roll = (100. * num_hits / num_attacks + 1);
+                }
+                if (first_roll <= head_hit_chance) {
+                    attack_key = "head";
                     attacked_parameters = parameters_head;
                 } else {
+                    attack_key = "body";
                     attacked_parameters = parameters_body;
                 }
 
@@ -223,6 +238,13 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
             body_armor_damage[num_hits].update(start_body_armor - parameters_body.armor);
             head_armor_damage[num_hits].update(start_head_armor - parameters_head.armor);
             kill_proba[num_hits].update(parameters_body.health <= 0);
+
+            if (attack_key) {
+                health_damage[attack_key].update(start_health - parameters_body.health);
+                body_armor_damage[attack_key].update(start_body_armor - parameters_body.armor);
+                head_armor_damage[attack_key].update(start_head_armor - parameters_head.armor);
+                kill_proba[attack_key].update(parameters_body.health <= 0);
+            }
         }
     }
 
@@ -236,6 +258,15 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
             head_armor_damage=head_armor_damage[num_hits].value(),
             kill_proba=kill_proba[num_hits].value(),
         })
+    }
+
+    foreach (key in ["body", "head"]) {
+        res[key] <- {
+            health_damage=health_damage[key].value(),
+            body_armor_damage=body_armor_damage[key].value(),
+            head_armor_damage=head_armor_damage[key].value(),
+            kill_proba=kill_proba[key].value(),
+        }
     }
 
     return res;

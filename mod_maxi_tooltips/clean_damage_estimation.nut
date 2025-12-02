@@ -497,14 +497,15 @@ local default_parameters = {
     local armor_roll_interval = range(parameters.min_damage, parameters.max_damage);
     local weight = 1./armor_roll_interval.len();
     local destroy_point;
+    local proba_armor_destroy;
     foreach (idx, armor_roll in armor_roll_interval) {
         if ((armor_roll * parameters.armor_multiplier) > parameters.armor) {
             destroy_point = armor_roll;
+            proba_armor_destroy = (armor_roll_interval.len() - idx) * weight;
             break
         }
     }
 
-    local proba_armor_destroy = (armor_roll_interval.len() - idx) * weight;
     // A single point in the destroy_armor range and the remainder at low damage values
     local representation = [
         [1 - proba_armor_destroy, parameters.min_damage, destroy_point - 1, total_number_of_points - 1],

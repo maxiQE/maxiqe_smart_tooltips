@@ -187,8 +187,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 };
 
 // Returns a list of all effects in tooltip-form
-::ModMaxiTooltips.TacticalTooltip.getTooltipEffects <- function( entity, _startID )
-{
+::ModMaxiTooltips.TacticalTooltip.getTooltipEffects <- function( entity, _startID ) {
 	local currentID = _startID;
 	local collapseThreshold = ::ModMaxiTooltips.Mod.ModSettings.getSetting("CollapseEffectsWhenX").getValue();
 	local effectList = [];
@@ -283,7 +282,8 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 				id = currentID,
 				type = "text",
 				icon = perkDef != null ? perkDef.Icon : perk.getIcon(),
-				text = ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedPerkName(perk))
+				// text = ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedPerkName(perk))
+                text = ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(perk))
 			};
 			currentID++;
 

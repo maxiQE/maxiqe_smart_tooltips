@@ -340,6 +340,23 @@ local function compute_hit_distribution(hitchance, num_attacks) {
         //         rawHTMLInText = true
         //     })
 
+        foreach (key in ["head", "head"]) {
+            local icon_name = "hitchance.png";
+            local hit_chance = hit_distribution[num_hits+1] * head_hit_chance;
+            tooltip.push({
+                type = "text",
+                text = attack_info_tooltip_line_5(
+                    summary_info_mc[key].kill_proba,
+                    summary_info_mc[key].health_damage,
+                    summary_info_mc[key].head_armor_damage,
+                    summary_info_mc[key].body_armor_damage,
+                    hit_chance,
+                    icon_name
+                ),
+                rawHTMLInText = true
+            })
+        }
+
         for (local num_hits = 0; num_hits < num_attacks; num_hits++) {
             local icon_name = format("maxi_tt_num_hits_%x.png", num_hits + 1)
             local total_armor_damage = summary_info_mc[num_hits].body_armor_damage + summary_info_mc[num_hits].head_armor_damage;
