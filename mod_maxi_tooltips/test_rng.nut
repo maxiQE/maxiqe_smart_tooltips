@@ -210,7 +210,6 @@ function run_all_tests() {
 }
 
 
-// TODO: if debug
-if (false) {
+if (::ModMaxiTooltips.Mod.Debug.isEnabled()) {
     run_all_tests();
 }

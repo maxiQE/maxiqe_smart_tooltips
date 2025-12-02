@@ -542,8 +542,13 @@ local function test__damage_on_specific_roll_is_equal(attacker_factory, target_f
     }
 
     if (success) {
-        TEST_SUCCESSFULL();
+        ::ModMaxiTooltips.Mod.Debug.addPopupMessage( "Test succesfull");
     } else {
-        TEST_FAILED();
+        ::ModMaxiTooltips.Mod.Debug.addPopupMessage( "Test failed !! :-(");
     }
+}
+
+
+::ModMaxiTooltips.TacticalTooltip.bench__damage_estimation <- function() {
+    ::ModMaxiTooltips.Mod.Debug.addPopupMessage( "Not implemented yet :-(");
 }

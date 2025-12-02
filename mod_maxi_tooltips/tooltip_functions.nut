@@ -503,6 +503,6 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 	_list.push({
 		id = _startID,
 		type = "text",
-		text = "[u][size=15]" + _title + "[/size][/u]"
+		text = "[u][size=15]" + _title + "[/size][/u]",
 	});
 };

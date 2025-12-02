@@ -142,12 +142,13 @@ local function tooltip_from_info(info, calculation_time, info_keys, icons)
 {
     local tooltip = [];
 
-    // TODO: only debug mode
-    tooltip.push({
+    if (ModMaxiTooltips.Mod.ModSettings.getSetting("show_calculation_time").getValue()) {
+        tooltip.push({
             type = "text",
             text = attack_info_tooltip__calculation_time(calculation_time, "Calculation time"),
             rawHTMLInText = true
-    })
+        })
+    }
 
     if (info.marginal_kill_chance >= 1)
     {
