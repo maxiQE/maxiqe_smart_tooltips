@@ -274,38 +274,41 @@ local default_parameters = {
 // Return
 // - proba_armor_destroy: float
 // - destroy_point: int or None
-// - representation: list[tuple[proba: float, a: int, b: int]]
+// - representation: list[tuple[proba: float, a: int, b: int, num: int]]
 //   a list of probability and intervals to use to represent armor, for sampling
+//   Total number of points should be 7 to do 7 x 15 samples
 ::ModMaxiTooltips.TacticalTooltip.armor_destroy_from_params <- function(parameters) {
+    local total_number_of_points = 7;
+
     // Armor ignoring attack
     if (parameters.armor == 0 || parameters.direct_damage_coefficient >= 1.0) {
         // Note the double-min: we don't need to care about armor value at all
         return {
             proba_armor_destroy=0.,
             destroy_point=null,
-            representation=[[1., parameters.min_damage, parameters.min_damage]]
+            representation=[[1., parameters.min_damage, parameters.min_damage, 1]]
         }
     }
 
     local max_damage = parameters.max_damage * parameters.armor_multiplier;
 
-    // Armor destroy is impossible
+    // Armor destroy is impossible: sample uniformly over the interval
     if (max_damage < parameters.armor) {
         return {
             proba_armor_destroy=0.,
             destroy_point=null,
-            representation=[[1., parameters.min_damage, parameters.max_damage]]
+            representation=[[1., parameters.min_damage, parameters.max_damage, total_number_of_points]]
         }
     }
 
     local min_damage = parameters.min_damage * parameters.armor_multiplier;
 
-    // Armor destroy is certain
+    // Armor destroy is certain: use only the max damage
     if (min_damage >= parameters.armor) {
         return {
             proba_armor_destroy=1.,
             destroy_point=parameters.min_damage,
-            representation=[[1., parameters.min_damage, parameters.max_damage]]
+            representation=[[1., parameters.max_damage, parameters.max_damage, 1]]
         }
     }
 
@@ -321,9 +324,10 @@ local default_parameters = {
     }
 
     local proba_armor_destroy = (armor_roll_interval.len() - idx) * weight;
+    // A single point in the destroy_armor range and the remainder at low damage values
     local representation = [
-        [1 - proba_armor_destroy, parameters.min_damage, destroy_point - 1],
-        [proba_armor_destroy, destroy_point, parameters.max_damage]
+        [1 - proba_armor_destroy, parameters.min_damage, destroy_point - 1, total_number_of_points - 1],
+        [proba_armor_destroy, parameters.max_damage, parameters.max_damage, 1]
     ]
 
     return {
@@ -334,20 +338,22 @@ local default_parameters = {
 }
 
 ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__smartfast <- function(parameters) {
+    local num_points_health = 15;
+
     local armor_destroy_res = ::ModMaxiTooltips.TacticalTooltip.armor_destroy_from_params(parameters);
 
     local armor_roll_array = [];
     local weight_armor_array = [];
     foreach (interval_info in armor_destroy_res.representation) {
         local proba = interval_info[0];
-        local local_array = interval(interval_info[1], interval_info[2], 2);
+        local local_array = interval(interval_info[1], interval_info[2], interval_info[3]);
         foreach (value in local_array) {
             armor_roll_array.push(value);
             weight_armor_array.push(proba * 1. / local_array.len())
         }
     }
 
-    local health_roll_array = interval(parameters.min_damage, parameters.max_damage, 11);
+    local health_roll_array = interval(parameters.min_damage, parameters.max_damage, num_points_health);
     local weight_health = 1. / health_roll_array.len();
 
     local health_damage=0;
@@ -394,8 +400,7 @@ local default_parameters = {
     local summary_head = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__exact(parameters_head);
     local summary_body = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__exact(parameters_body);
 
-    local properties = skill.m.Container.buildPropertiesForUse(skill, target);
-    local head_hit_chance = properties.getHitchance(::Const.BodyPart.Head);
+    local head_hit_chance = ::ModMaxiTooltips.TacticalTooltip.compute_head_hit_chance(attacker, target, skill);
 
     local kill_proba = (head_hit_chance * summary_head.kill_proba + (100 - head_hit_chance) * summary_body.kill_proba);
 

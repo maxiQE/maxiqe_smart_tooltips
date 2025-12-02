@@ -37,13 +37,13 @@ div.maxi-damage-tooltip
 }
 
 div.maxi-damage-tooltip img {
-    width: 20px;
-    height: 20px;
-    margin-right: 10px;
+    width: 18px;
+    height: 18px;
+    margin-right: 3px;
 }
 
 div.maxi-damage-tooltip span {
-    width: 6rem;
+    width: 4.8rem;
     display:flex;
     justify-content: flex-start;
     flex-shrink: 1;

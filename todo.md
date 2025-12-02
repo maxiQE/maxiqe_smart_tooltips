@@ -4,48 +4,11 @@
 
 - MSU: enable RawHtml in all tooltips
 
-- test multi-hit
-    - bug: head_hit_chance not correctly taken into account: all hits to body instead
+- use single-line 5 element tooltip everywhere
 
-- check exactly what's expected in the attack_info_tooltip_line function (probability? 100xproba?) and fix in MC code
-
-- 5 element tooltip:
-    - line 1: kill proba    health damage   body armor damage   head armor
-    - line 2:                                                   hitchance
-    - single line: just compress it lmao?
-
-- 4 element tooltip:
-    - one line: kill proba    health damage   TOTAL armor damage   hitchance
-    - need one more input for armor damage icon: body armor, head armor, mixed damage
-
-- Monte carlo doesn't need to be fixed and use halton points: don't care lol
-- Actually, it's trivial isn't it? Fix sequence of 
-
-- split-man info estimation:
-
-    - MonteCarlo with approx 100 hits
-        - body: health, body armor, head armor, conditional kill proba
-        - head: ...
-
-- 3-flail info estimation:
-
-    - MonteCarlo with approx 100 hits
-        - 1 hit: health, body armor, head armor, conditional kill proba
-        - 2 hit: ...
-        - 3 hits: ...
-        - ! Combine the three rolls
-
-- x approximate mean calculation:
-    - fast sampling of armor roll
-    - precise sampling of health roll
-
-- x Multi-hit tooltip
-    - show hit multiplier with current tooltip
-    - modify calculation of marginalKillChance (1 - (1 - hitchance)**k) * probaToKill
-    - modify display: show marginalKillChance > or >> depending on hit chance
-- x split-man tooltip
-    - add additional line for second hit with current head armor
-    - show that this is the split-man bonus damage line
+- simplify the general case:
+    - in exact, use linspace and range as appropriate
+    - compare exact, some params, MC
 
 - include hit factors
 
