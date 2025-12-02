@@ -568,25 +568,10 @@ local function getHitFactorImmunityForcedMovement(skill, tile, user, myTile, tar
 }
 
 
-// Separator between sections
-local function add_divider(skill, tile, user, myTile, targetEntity, distanceToTarget)
-{
-    local tooltips = [];
-    tooltips.push({
-        type = "text",
-        text = "<div class='maxi-coin'></div>",
-        rawHTMLInText = true,
-    });
-    return tooltips;
-}
-
-
 ::ModMaxiTooltips.TacticalTooltip.hit_factors_tooltip_list <- [
     // Alerts for skills
     getHitFactorAlertNineLives,
     getHitFactorAlertRiposte,
-
-    add_divider,
 
     // Other alerts
     getHitFactorDamageResistance,
@@ -595,12 +580,8 @@ local function add_divider(skill, tile, user, myTile, targetEntity, distanceToTa
     getHitFactorImmunityDisarmed,
     getHitFactorImmunityForcedMovement,
 
-    add_divider,
-
     // Lunge modifier
     getHitFactorLungeDamageModifier,
-
-    add_divider,
 
     // Hit chance bonus
     getHitFactorSkillHitChanceBonus,
@@ -610,8 +591,6 @@ local function add_divider(skill, tile, user, myTile, targetEntity, distanceToTa
     getHitFactorTargetOnBadTerrain,
     getHitFactorFastAdaptationBonus,
     getHitFactorOathOfWrath,
-
-    add_divider,
 
     // Maluses
     getHitFactorSkillTooCloseMalus,
@@ -623,8 +602,6 @@ local function add_divider(skill, tile, user, myTile, targetEntity, distanceToTa
     getHitFactorDistanceModifier,
     getHitFactorBlockedLineOfSightMalus,
     getHitFactorNighttimeModifier,
-
-    add_divider,
 ];
 
 

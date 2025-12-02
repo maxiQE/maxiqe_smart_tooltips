@@ -2,20 +2,6 @@
 
 ## Todo
 
-- x documentation
-
-- menu control
-
-    - x menu separators
-
-    - x trigger test?
-
-    - x hide calculation timer
-
-    - x hit factors
-
-        - use vanilla hit factors
-
 - bugs:
     - "Perk+" tooltips not working?
         - check if it works in legends?
