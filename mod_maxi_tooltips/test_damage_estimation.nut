@@ -7,6 +7,7 @@ local function is_close(value1, value2, epsilon=0.1)
 
 
 local function tablesAreEqual(table1, table2, epsilon=0.1) {
+    local success = true;
     // Check if both inputs are tables
     foreach (key, value in table1) {
         if (!table2.rawin(key) || !is_close(table1[key], table2[key], epsilon) ) {
@@ -18,10 +19,10 @@ local function tablesAreEqual(table1, table2, epsilon=0.1) {
                 + " " + typeof table2[key]
                 + " " + is_close(table1[key], table2[key])
             );
-            return false;
+            success = false;
         }
     }
-    return true;
+    return success;
 }
 
 
@@ -270,7 +271,7 @@ local function entity_factory__from_script(script)
 {
     local function entity_factory()
     {
-        ::ModMaxiTooltips.Mod.Debug.printLog("entity_factory__from_script; script = " + script);
+        // ::ModMaxiTooltips.Mod.Debug.printLog("entity_factory__from_script; script = " + script);
         return ::World.getTemporaryRoster().create(script);
     }
 
@@ -285,7 +286,7 @@ local function equip_item_decorator__from_script(script)
     {
         local function decorated_entity_factory()
         {
-            ::ModMaxiTooltips.Mod.Debug.printLog("equip_item_decorator__from_script; script = " + script);
+            // ::ModMaxiTooltips.Mod.Debug.printLog("equip_item_decorator__from_script; script = " + script);
             local item = ::new(script);
             item.create();
 
@@ -310,7 +311,7 @@ local function gain_skill_decorator__from_script(script)
     {
         local function decorated_entity_factory()
         {
-            ::ModMaxiTooltips.Mod.Debug.printLog("gain_skill_decorator__from_script; script = " + script);
+            // ::ModMaxiTooltips.Mod.Debug.printLog("gain_skill_decorator__from_script; script = " + script);
             local entity = entity_factory();
 
             entity.m.Skills.add(::new(script));
@@ -329,162 +330,145 @@ local function gain_skill_decorator__from_script(script)
 local target_list = [
     // Enemies taken straight from the game
     // Test for racials, perks, etc. in realistic situations
-    ["", entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")],
-    ["", entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")],
-    ["", entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")],
-    ["", entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")],
-    ["", entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")],
-    ["", entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")],
-    ["", entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")],
-    ["", entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")],
-    ["", entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")],
-    ["", entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")],
+    ["heavy_skeleton", entity_factory__from_script("scripts/entity/tactical/enemies/skeleton_heavy")],
+    ["alp", entity_factory__from_script("scripts/entity/tactical/enemies/alp")],
+    // ["sand_golem_high", entity_factory__from_script("scripts/entity/tactical/enemies/sand_golem_high")],     // Causes a crash?
+
+    // Other realistic enemies
+    ["vampire", entity_factory__from_script("scripts/entity/tactical/enemies/vampire")],
+    ["unhold", entity_factory__from_script("scripts/entity/tactical/enemies/unhold")],
+    // ["zombie", entity_factory__from_script("scripts/entity/tactical/enemies/zombie")],
 
     // bandit-thug with various armor
-    ["", equip_item_decorator__from_script("scripts/items/armor/butcher_apron")(
+    ["butcher_apron", equip_item_decorator__from_script("scripts/items/armor/butcher_apron")(
         entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
     )],
-    ["", equip_item_decorator__from_script("scripts/items/armor/reinforced_leather_tunic")(
+    ["leather_tunic", equip_item_decorator__from_script("scripts/items/armor/reinforced_leather_tunic")(
         entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
     )],
-    ["", equip_item_decorator__from_script("scripts/items/armor/light_scale_armor")(
-        entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
-    )],
-    ["", equip_item_decorator__from_script("scripts/items/armor/coat_of_plates")(
+    // ["scale_armor", equip_item_decorator__from_script("scripts/items/armor/light_scale_armor")(
+    //     entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
+    // )],
+    ["coat_of_plates", equip_item_decorator__from_script("scripts/items/armor/coat_of_plates")(
         entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
     )],
 
     // bandit-thug + BF with various armor
-    ["", gain_skill_decorator__from_script("scripts/skills/perks/perk_battle_forged")(
-        equip_item_decorator__from_script("scripts/items/armor/butcher_apron")(
-            entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
-        )
-    )],
-    ["", gain_skill_decorator__from_script("scripts/skills/perks/perk_battle_forged")(
-        equip_item_decorator__from_script("scripts/items/armor/reinforced_leather_tunic")(
-            entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
-        )
-    )],
-    ["", gain_skill_decorator__from_script("scripts/skills/perks/perk_battle_forged")(
+    // ["BF__butcher_apron", gain_skill_decorator__from_script("scripts/skills/perks/perk_battle_forged")(
+    //     equip_item_decorator__from_script("scripts/items/armor/butcher_apron")(
+    //         entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
+    //     )
+    // )],
+    // ["BF__leather_tunic", gain_skill_decorator__from_script("scripts/skills/perks/perk_battle_forged")(
+    //     equip_item_decorator__from_script("scripts/items/armor/reinforced_leather_tunic")(
+    //         entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
+    //     )
+    // )],
+    ["BF__scale_armor", gain_skill_decorator__from_script("scripts/skills/perks/perk_battle_forged")(
         equip_item_decorator__from_script("scripts/items/armor/light_scale_armor")(
             entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
         )
     )],
-    ["", gain_skill_decorator__from_script("scripts/skills/perks/perk_battle_forged")(
+    ["BF__coat_of_plates", gain_skill_decorator__from_script("scripts/skills/perks/perk_battle_forged")(
         equip_item_decorator__from_script("scripts/items/armor/coat_of_plates")(
             entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
         )
     )],
 
     // bandit-thug + nimble with various armor
-    ["", gain_skill_decorator__from_script("scripts/skills/perks/perk_nimble")(
-        equip_item_decorator__from_script("scripts/items/armor/coat_of_plates")(
+    ["nimble__butcher_apron", gain_skill_decorator__from_script("scripts/skills/perks/perk_nimble")(
+        equip_item_decorator__from_script("scripts/items/armor/butcher_apron")(
             entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
         )
     )],
-    ["", gain_skill_decorator__from_script("scripts/skills/perks/perk_nimble")(
-        equip_item_decorator__from_script("scripts/items/armor/reinforced_leather_tunic")(
-            entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
-        )
-    )],
-    ["", gain_skill_decorator__from_script("scripts/skills/perks/perk_nimble")(
+    // ["nimble__leather_tunic", gain_skill_decorator__from_script("scripts/skills/perks/perk_nimble")(
+    //     equip_item_decorator__from_script("scripts/items/armor/reinforced_leather_tunic")(
+    //         entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
+    //     )
+    // )],
+    ["nimble__scale_armor", gain_skill_decorator__from_script("scripts/skills/perks/perk_nimble")(
         equip_item_decorator__from_script("scripts/items/armor/light_scale_armor")(
             entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
         )
     )],
-    ["", gain_skill_decorator__from_script("scripts/skills/perks/perk_nimble")(
-        equip_item_decorator__from_script("scripts/items/armor/coat_of_plates")(
-            entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
-        )
-    )],
+    // ["nimble__coat_of_plates", gain_skill_decorator__from_script("scripts/skills/perks/perk_nimble")(
+    //     equip_item_decorator__from_script("scripts/items/armor/coat_of_plates")(
+    //         entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
+    //     )
+    // )],
 
     // bandit-thug + injury with various armor; to test executioner
-    ["", gain_skill_decorator__from_script("scripts/skills/injury/dislocated_shoulder_injury")(
-        equip_item_decorator__from_script("scripts/items/armor/reinforced_leather_tunic")(
-            entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
-        )
-    )],
-    ["", gain_skill_decorator__from_script("scripts/skills/injury/dislocated_shoulder_injury")(
-        equip_item_decorator__from_script("scripts/items/armor/coat_of_plates")(
-            entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
-        )
-    )],
+    // ["injury__leather_tunic", gain_skill_decorator__from_script("scripts/skills/injury/dislocated_shoulder_injury")(
+    //     equip_item_decorator__from_script("scripts/items/armor/reinforced_leather_tunic")(
+    //         entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
+    //     )
+    // )],
+    // ["injury__coat_of_plates", gain_skill_decorator__from_script("scripts/skills/injury/dislocated_shoulder_injury")(
+    //     equip_item_decorator__from_script("scripts/items/armor/coat_of_plates")(
+    //         entity_factory__from_script("scripts/entity/tactical/enemies/bandit_thug")
+    //     )
+    // )],
 ];
 
 
 // Pairs of name, entity_factory
 // Attacker + skills but without weapon and skills
-// This uses the human script to have a body without any skill going on
+// This uses the militia script to have a body without any skill going on
 local raw_attacker_list = [
-    ["No skills", entity_factory__from_script("scripts/entity/tactical/humans/barbarian_thrall")],
+    // Base Entity
+    ["no_skills", entity_factory__from_script("scripts/entity/tactical/humans/militia")],
 
     // Perks
-    ["", gain_skill_decorator__from_script("scripts/skills/perks/perk_coup_de_grace")(
-        entity_factory__from_script("scripts/entity/tactical/humans/barbarian_thrall")
+    // ["coup_de_grace", gain_skill_decorator__from_script("scripts/skills/perks/perk_coup_de_grace")(
+    //     entity_factory__from_script("scripts/entity/tactical/humans/militia")
+    // )],
+    // ["perk_mastery_hammer", gain_skill_decorator__from_script("scripts/skills/perks/perk_mastery_hammer")(
+    //     entity_factory__from_script("scripts/entity/tactical/humans/militia")
+    // )],
+    // ["perk_mastery_crossbow", gain_skill_decorator__from_script("scripts/skills/perks/perk_mastery_crossbow")( //
+    //     entity_factory__from_script("scripts/entity/tactical/humans/militia")
+    // )],
+    ["duelist", gain_skill_decorator__from_script("scripts/skills/perks/perk_duelist")(        // Armor penetration
+        entity_factory__from_script("scripts/entity/tactical/humans/militia")
     )],
-    ["", gain_skill_decorator__from_script("scripts/skills/perks/perk_mastery_hammer")(
-        entity_factory__from_script("scripts/entity/tactical/humans/barbarian_thrall")
-    )],
-    ["", gain_skill_decorator__from_script("scripts/skills/perks/perk_mastery_crossbow")(
-        entity_factory__from_script("scripts/entity/tactical/humans/barbarian_thrall")
-    )],
-    ["", gain_skill_decorator__from_script("scripts/skills/perks/perk_duelist")(
-        entity_factory__from_script("scripts/entity/tactical/humans/barbarian_thrall")
-    )],
-    ["", gain_skill_decorator__from_script("scripts/skills/effects/killing_frenzy_effect")(
-        entity_factory__from_script("scripts/entity/tactical/humans/barbarian_thrall")
-    )],
-
-    // Backgrounds
-    ["", gain_skill_decorator__from_script("scripts/skills/backgrounds/killer_on_the_run_background")(
-        entity_factory__from_script("scripts/entity/tactical/humans/barbarian_thrall")
+    ["killing_frenzy", gain_skill_decorator__from_script("scripts/skills/effects/killing_frenzy_effect")(
+        entity_factory__from_script("scripts/entity/tactical/humans/militia")
     )],
 
-    // Traits
-    ["", gain_skill_decorator__from_script("scripts/skills/traits/brute_trait")(      // Brute: additional head-shot damage
-        entity_factory__from_script("scripts/entity/tactical/humans/barbarian_thrall")
-    )],
-    ["", gain_skill_decorator__from_script("scripts/skills/traits/drunkard_trait")(
-        entity_factory__from_script("scripts/entity/tactical/humans/barbarian_thrall")
-    )],
-    ["", gain_skill_decorator__from_script("scripts/skills/traits/huge_trait")(
-        entity_factory__from_script("scripts/entity/tactical/humans/barbarian_thrall")
-    )],
-    ["", gain_skill_decorator__from_script("scripts/skills/traits/tiny_trait")(
-        entity_factory__from_script("scripts/entity/tactical/humans/barbarian_thrall")
-    )],
+    // // Backgrounds
+    // ["background_killer_on_the_run", gain_skill_decorator__from_script("scripts/skills/backgrounds/killer_on_the_run_background")(      // Increased head hit chance
+    //     entity_factory__from_script("scripts/entity/tactical/humans/militia")
+    // )],
+
+    // // Traits
+    // ["trait_brute_head_damage", gain_skill_decorator__from_script("scripts/skills/traits/brute_trait")(        // Brute: additional head-shot damage
+    //     entity_factory__from_script("scripts/entity/tactical/humans/militia")
+    // )],
+    // ["trait_drunkard_damage", gain_skill_decorator__from_script("scripts/skills/traits/drunkard_trait")(     // More damage
+    //     entity_factory__from_script("scripts/entity/tactical/humans/militia")
+    // )],
+    // ["trait_huge_damage", gain_skill_decorator__from_script("scripts/skills/traits/huge_trait")(         // More damage
+    //     entity_factory__from_script("scripts/entity/tactical/humans/militia")
+    // )],
+    // ["trait_tiny_damage_reduction", gain_skill_decorator__from_script("scripts/skills/traits/tiny_trait")(         // Less damage
+    //     entity_factory__from_script("scripts/entity/tactical/humans/militia")
+    // )],
 ];
-
 
 local weapon_script__skill_id__pairs = [
     ["scripts/items/weapons/warhammer", "actives.hammer"],
-    ["scripts/items/weapons/boar_spear", "actives.thrust"],
+    ["scripts/items/weapons/warhammer", "actives.crush_armor"],
+    // ["scripts/items/weapons/boar_spear", "actives.thrust"],
 
-    // ["SCRIPT_NAME", "SKILL_ID"],
+    // ["scripts/items/weapons/dagger", "actives.puncture"],
+    ["scripts/items/weapons/fighting_axe", "actives.chop"],
+    ["scripts/items/weapons/two_handed_flanged_mace", "actives.cudgel"],
+    // ["scripts/items/weapons/two_handed_flanged_mace", "actives.strike_down"],
 ];
 
 
-// local name__attacker__skill_id__triplets = [];
-// foreach (raw_attacker_pair, raw_attacker_factory)
-// {
-//     local raw_attacker_name = raw_attacker_pair[0];
-//     local raw_attacker_factory = raw_attacker_pair[1];
-//     foreach (weapon_skill_pair in weapon_script__skill_id__pairs) {
-//         local weapon_script = weakpon_skill_pair[0];
-//         local skill_id = weakpon_skill_pair[1];
-
-//         name__attacker__skill_id__triplets.push(
-//             [
-//                 raw_attacker_name + "___" + skill_id,
-//                 equip_item_decorator__from_script(weapon_script)(raw_attacker_factory),
-//                 skill_id,
-//             ]
-//         )
-//     }
-// }
-
-
-local roll_value_list = [20, 27, 30, 33, 40, 41, 60, 66, 80];
+// local roll_value_list = [20, 27, 30, 33, 40, 41, 60, 66, 80];
+local roll_value_list = [ 27, 33, 66];
 
 
 local function test__damage_on_specific_roll_is_equal(attacker_factory, target_factory, weapon_script, skill_id, armor_roll, health_roll) {
@@ -495,13 +479,13 @@ local function test__damage_on_specific_roll_is_equal(attacker_factory, target_f
 
     local skill = attacker.getSkills().getSkillByID(skill_id);
 
-    ::ModMaxiTooltips.Mod.Debug.printLog("test__damage_on_specific_roll_is_equal information");
-    attacker.getSkills().print();
-    target.getSkills().print();
-    ::ModMaxiTooltips.Mod.Debug.printLog("skill.m.ID = " + skill.m.ID);
+    // ::ModMaxiTooltips.Mod.Debug.printLog("test__damage_on_specific_roll_is_equal information");
+    // attacker.getSkills().print();
+    // target.getSkills().print();
+    // ::ModMaxiTooltips.Mod.Debug.printLog("skill.m.ID = " + skill.m.ID);
 
     local success = true;
-    foreach (body_part in [::Const.BodyPart.Head, ::Const.BodyPart.Head]) {
+    foreach (body_part in [::Const.BodyPart.Head, ::Const.BodyPart.Body]) {
         local parameters = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, body_part);
         local damage_1 = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, parameters);
         local damage_2 = damage_direct__from_roll(armor_roll, health_roll, body_part, skill, attacker, target);
@@ -509,7 +493,9 @@ local function test__damage_on_specific_roll_is_equal(attacker_factory, target_f
         local is_similar = tablesAreEqual(damage_1, damage_2, 0.01);
 
         if (!is_similar) {
-            ::ModMaxiTooltips.Mod.Debug.printLog("Test failed: test__damage_on_specific_roll_is_equal");
+            ::ModMaxiTooltips.Mod.Debug.printError("Test failed: test__damage_on_specific_roll_is_equal");
+            ::ModMaxiTooltips.Mod.Debug.printError("rolls = " + armor_roll + ", " + health_roll + "; bodypart = " + body_part);
+            ::MSU.Log.printData(parameters);
             ::MSU.Log.printData(damage_1);
             ::MSU.Log.printData(damage_2);
         }
@@ -528,23 +514,36 @@ local function test__damage_on_specific_roll_is_equal(attacker_factory, target_f
 {
     local success = true;
 
-    local attacker_name = raw_attacker_list[0][0];
-    local attacker_factory = raw_attacker_list[0][1];
+    foreach (raw_attacker_information in raw_attacker_list) {
+        local attacker_name = raw_attacker_information[0];
+        local attacker_factory = raw_attacker_information[1];
 
-    local target_name = target_list[0][0];
-    local target_factory = target_list[0][1];
+        foreach (target_information in target_list) {
+            local target_name = target_information[0];
+            local target_factory = target_information[1];
 
-    local weapon_script = weapon_script__skill_id__pairs[0][0];
-    local skill_id = weapon_script__skill_id__pairs[0][1];
+            foreach (weapon_information in weapon_script__skill_id__pairs) {
+                local weapon_script = weapon_information[0];
+                local skill_id = weapon_information[1];
 
-    local armor_roll = roll_value_list[0];
-    local health_roll = roll_value_list[3];
+                foreach (armor_roll in roll_value_list) {
+                    foreach (health_roll in roll_value_list) {
+                        local local_success = test__damage_on_specific_roll_is_equal(attacker_factory, target_factory, weapon_script, skill_id, armor_roll, health_roll);
+                        success = local_success && success;
 
-    success = success && test__damage_on_specific_roll_is_equal(attacker_factory, target_factory, weapon_script, skill_id, armor_roll, health_roll);
+                        if (!local_success) {
+                            local name = attacker_name + "__" + target_name + "__" + skill_id + "__" + armor_roll + "__" + health_roll;
+                            ::ModMaxiTooltips.Mod.Debug.printError("Test failed: test__damage_on_specific_roll_is_equal; name = " + name);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     if (success) {
-        // TEST_SUCCESSFULL();
+        TEST_SUCCESSFULL();
     } else {
-        // TEST_FAILED();
+        TEST_FAILED();
     }
 }

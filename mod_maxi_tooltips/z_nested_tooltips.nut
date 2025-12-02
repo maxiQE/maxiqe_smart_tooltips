@@ -137,12 +137,12 @@ local getThresholdForInjury = function( _script )
 		MaxiHeadHitChance = ::MSU.Class.BasicTooltip("Head hit chance", "Chance of this attack hitting the head, and corresponding damage information."),
         MaxiBodyHitChance = ::MSU.Class.BasicTooltip("Body hit chance", "Chance of this attack hitting the body, and corresponding damage information."),
 
-		MaxiMultiHitHeadHitChance = ::MSU.Class.BasicTooltip("Chance of single head hit", "Chance of a single hit to the head, and corresponding damage information."),
-        MaxiMultiHitBodyHitChance = ::MSU.Class.BasicTooltip("Change of single body hit", "Chance of a single hit to the body, and corresponding damage information."),
-        MaxiMultiHitZeroHitChance = ::MSU.Class.BasicTooltip("Chance of zero hits", "Chance of zero hits, and corresponding damage information."),
-        MaxiMultiHitOneHitChance = ::MSU.Class.BasicTooltip("Chance of one hit", "Chance of one hit, and corresponding damage information."),
-        MaxiMultiHitTwoHitChance = ::MSU.Class.BasicTooltip("Chance of two hits", "Chance of two hits, and corresponding damage information."),
-        MaxiMultiHitThreeHitChance = ::MSU.Class.BasicTooltip("Chance of three hits", "Chance of three hits, and corresponding damage information."),
+		MaxiMultiHitHeadHitChance = ::MSU.Class.BasicTooltip("Chance of a single head hit", "Chance of a single hit to the head, and corresponding damage information. This factors-in hit-chance."),
+        MaxiMultiHitBodyHitChance = ::MSU.Class.BasicTooltip("Change of a single body hit", "Chance of a single hit to the body, and corresponding damage information. This factors-in hit-chance."),
+        MaxiMultiHitZeroHitChance = ::MSU.Class.BasicTooltip("Chance of zero hits", "Chance of zero hits, and corresponding damage information. This factors-in hit-chance."),
+        MaxiMultiHitOneHitChance = ::MSU.Class.BasicTooltip("Chance of one hit", "Chance of one hit, and corresponding damage information. This factors-in hit-chance."),
+        MaxiMultiHitTwoHitChance = ::MSU.Class.BasicTooltip("Chance of two hits", "Chance of two hits, and corresponding damage information. This factors-in hit-chance."),
+        MaxiMultiHitThreeHitChance = ::MSU.Class.BasicTooltip("Chance of three hits", "Chance of three hits, and corresponding damage information. This factors-in hit-chance."),
 
 		MaxiSplitManHeadHitChance = ::MSU.Class.BasicTooltip("Head hit chance", "Chance of the main split-man attack hitting the head, and corresponding damage information."),
         MaxiSplitManBodyHitChance = ::MSU.Class.BasicTooltip("Body hit chance", "Chance of the main split-man attack hitting the body, and corresponding damage information.."),

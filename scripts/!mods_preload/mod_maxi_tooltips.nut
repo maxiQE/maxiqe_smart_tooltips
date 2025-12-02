@@ -41,7 +41,10 @@ local queueLoadOrder = [">mod_msu", ">mod_modern_hooks", ">mod_nested_tooltips"]
 
 
 ::ModMaxiTooltips.ModHook.queue(queueLoadOrder, function() {
-	::ModMaxiTooltips.TacticalTooltip.test__damage_estimation();
+	// TODO: if debug instead
+	if (false) {
+		::ModMaxiTooltips.TacticalTooltip.test__damage_estimation();
+	}
 }, ::Hooks.QueueBucket.FirstWorldInit);
 
 

@@ -102,7 +102,8 @@ local function interval(a, b, n) {
         direct_damage_coefficient=hit_info.DamageDirect,
         direct_damage_coefficient_multiplier=defender_properties.DamageReceivedDirectMult,
         health_multiplier=attacker_properties.DamageRegularMult * attacker_damage_mult * defender_properties.DamageReceivedRegularMult * target_damage_mult,
-        armor_multiplier=attacker_properties.DamageArmorMult * attacker_damage_mult * defender_properties.DamageReceivedArmorMult * target_damage_mult,
+        armor_multiplier_1=attacker_properties.DamageArmorMult,
+        armor_multiplier_2=attacker_damage_mult * defender_properties.DamageReceivedArmorMult * target_damage_mult,
         bodypart_damage_mult=hit_info.BodyDamageMult
     };
 
@@ -112,7 +113,7 @@ local function interval(a, b, n) {
 
 ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll <- function(armor_roll, health_roll, parameters) {
     local damageRegular = health_roll * parameters.health_multiplier;
-    local damageArmor = armor_roll * parameters.armor_multiplier;
+    local damageArmor = ::Math.max(0, armor_roll * parameters.armor_multiplier_1) * parameters.armor_multiplier_2;
 
     local armor = 0;
     local armorDamage = 0;
@@ -138,7 +139,7 @@ local function interval(a, b, n) {
         health_damage_armor_break = 0
         if (armor <= 0)
         {
-            health_damage_armor_break = ::Math.maxf(0, damageRegular * ::Math.maxf(0.0, 1.0 - parameters.direct_damage_coefficient * parameters.direct_damage_coefficient_multiplier) - armorDamage);
+            health_damage_armor_break = ::Math.max(0, damageRegular * ::Math.maxf(0.0, 1.0 - parameters.direct_damage_coefficient * parameters.direct_damage_coefficient_multiplier) - armorDamage);
         }
     }
 
@@ -186,7 +187,7 @@ local function interval(a, b, n) {
         }
     }
 
-    local max_damage = parameters.max_damage * parameters.armor_multiplier;
+    local max_damage = ::Math.max(0, parameters.max_damage * parameters.armor_multiplier_1) * parameters.armor_multiplier_2;
 
     // Armor destroy is impossible: sample uniformly over the interval
     if (max_damage < parameters.armor) {
@@ -197,7 +198,7 @@ local function interval(a, b, n) {
         }
     }
 
-    local min_damage = parameters.min_damage * parameters.armor_multiplier;
+    local min_damage = ::Math.max(0, parameters.min_damage * parameters.armor_multiplier_1) * parameters.armor_multiplier_2;
 
     // Armor destroy is certain: use a two point representation
     if (min_damage >= parameters.armor) {
@@ -214,7 +215,7 @@ local function interval(a, b, n) {
     local destroy_point;
     local proba_armor_destroy;
     foreach (idx, armor_roll in armor_roll_interval) {
-        if ((armor_roll * parameters.armor_multiplier) > parameters.armor) {
+        if ((::Math.max(0, armor_roll * parameters.armor_multiplier_1) * parameters.armor_multiplier_2) > parameters.armor) {
             destroy_point = armor_roll;
             proba_armor_destroy = (armor_roll_interval.len() - idx) * weight;
             break

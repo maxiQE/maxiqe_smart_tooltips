@@ -142,7 +142,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
     // Update parameters for secondary hit
     foreach (body_part in ["body", "head"]) {
         all_parameters.secondary[body_part].health_multiplier *= 0.5;
-        all_parameters.secondary[body_part].armor_multiplier *= 0.5;
+        all_parameters.secondary[body_part].armor_multiplier_2 *= 0.5;
         all_parameters.secondary[body_part].bodypart_damage_mult = 1;
     }
 
@@ -326,7 +326,7 @@ local function compute_hit_distribution(hitchance, num_attacks) {
         local rng = ::ModMaxiTooltips.TacticalTooltip.CustomRNG(123456);
 
         // Avoid division by 0
-        local head_weight = (head_hit_chance / 100 - head_hitchance) + 0.0001;
+        local head_weight = (head_hit_chance / 100 - head_hit_chance) + 0.0001;
         local weight = first_attack_body_part == "head"? head_weight : 1 / head_weight;
 
         for (local repeat = 0; repeat < num_repeats; repeat++) {
@@ -346,9 +346,13 @@ local function compute_hit_distribution(hitchance, num_attacks) {
                         attack_key = first_attack_body_part;
                     } else if (body_part_roll <= head_hit_chance) {
                         attack_key = "head";
-                        attacked_parameters = parameters_head;
                     } else {
                         attack_key = "body";
+                    }
+
+                    if (attack_key == "head") {
+                        attacked_parameters = parameters_head;
+                    } else {
                         attacked_parameters = parameters_body;
                     }
 
@@ -417,9 +421,10 @@ local function compute_hit_distribution(hitchance, num_attacks) {
 ::ModMaxiTooltips.TacticalTooltip.attack_info__multihit <- function (attacker, target, skill) {
     local info = ::ModMaxiTooltips.TacticalTooltip.damage_info__multihit(attacker, target, skill)
 
-    local raw_hit_chance = skill.getHitchance(target);
     local head_hit_chance = ::ModMaxiTooltips.TacticalTooltip.compute_head_hit_chance(attacker, target, skill);
 
+    local raw_hit_chance = skill.getHitchance(target);
+    local num_attacks = ::ModMaxiTooltips.TacticalTooltip.get_number_of_attacks(skill);
     local hit_distribution = compute_hit_distribution(raw_hit_chance, num_attacks);
 
     // Compute marginal kill chance by summing over the "num_hits" information lines
