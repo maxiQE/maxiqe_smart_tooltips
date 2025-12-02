@@ -2,10 +2,6 @@
 
 ## Todo
 
-- modify icons
-
-    - maxi_tt_calculation_time replace with hourglass
-
 - hit factors: visual improvements
 
     - clearly separate sections
