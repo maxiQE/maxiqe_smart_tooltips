@@ -55,10 +55,7 @@ local queueLoadOrder = [">mod_msu", ">mod_modern_hooks", ">mod_nested_tooltips"]
 
 
 		local thrall = ::World.getTemporaryRoster().create("scripts/entity/tactical/enemies/bandit_thug");
-
 		local hammer = ::new("scripts/items/weapons/warhammer.nut");
-		// spear.create();
-
 		thrall.m.Items.equip(hammer);
 
 		foreach (skill in thrall.m.Skills.m.Skills) {
@@ -69,21 +66,15 @@ local queueLoadOrder = [">mod_msu", ">mod_modern_hooks", ">mod_nested_tooltips"]
 		local target = thrall;
 		local skill = thrall.getSkills().getSkillByID("actives.hammer");
 		local parameters_head = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Head);
-
-		::ModMaxiTooltips.Mod.Debug.printLog("Parameters for attack");
-		::MSU.Log.printData(parameters_head);
-
-		local summary = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__smartfast(parameters_head, "head");
-
-		::ModMaxiTooltips.Mod.Debug.printLog("Summary for attack");
-		::MSU.Log.printData(summary);
+		local summary_head = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__smartfast(parameters_head, "head");
+		local parameters_body = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Body);
+		local summary_body = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__summary__smartfast(parameters_head, "body");
 
 		local info_exact = ::ModMaxiTooltips.TacticalTooltip.attack_info_summary__slow__exact(attacker, target, skill);
 
-		::ModMaxiTooltips.Mod.Debug.printLog("info_exact.head for attack");
-		::MSU.Log.printData(info_exact.head);
+		local success = is_close(summary_head, info_exact.head) && is_close(summary_body, info_exact.body)
 
-		::ModMaxiTooltips.Mod.Debug.printLog("Predicted damage for thrall on thrall violence");
+		::World.getTemporaryRoster().remove(thrall);
 	}
 
 
