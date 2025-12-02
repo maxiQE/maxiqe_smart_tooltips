@@ -311,7 +311,14 @@ local function missing_value() {
 }
 
 
-local function tooltip_fragment(icon_name, values, max = null) {
+// Combine icon with value in html span
+local function tooltip_fragment(icon_name, value) {
+    return format("<span> <img src='coui://gfx/ui/icons/%s'/> %i </span>", icon_name, ::Math.round(value));
+}
+
+
+// Combine function with values, with 
+local function tooltip_fragment_values(icon_name, values, max = null) {
     local join = "";
     foreach(idx,val in values) {
         local val_str;
@@ -320,7 +327,6 @@ local function tooltip_fragment(icon_name, values, max = null) {
         } else {
             val_str = format("%i", ::Math.round(val));
         }
-        // val_str = "<b>" + val_str + "</b>";
 
         join += val_str;
         if (idx < values.len() - 1) {
@@ -329,31 +335,6 @@ local function tooltip_fragment(icon_name, values, max = null) {
     }
 
     return format("<span> <img src='coui://gfx/ui/icons/%s'/> %s </span>", icon_name, join)
-}
-
-
-local function tooltip_fragment_from_distribution(icon_name, distribution_info, max = null) {
-    // If the range of values is small, show mean as float
-    // If it is large, round the mean: we can ignore the digits
-    local range = distribution_info.max - distribution_info.min;
-    if (range > 5) distribution_info.mean = ::Math.round(distribution_info.mean);
-
-    local middle = 1. * (distribution_info.max + distribution_info.min) / 2.;
-    local show_mean = (
-        // If the max is above 100, we don't have enough space
-        distribution_info.max < 100
-        // If the mean is roughly in the middle of the range, don't show it
-        && middle - 0.1 * range < distribution_info.mean
-        && distribution_info.mean < middle + 0.1 * range
-    );
-
-    local values = [distribution_info.min, distribution_info.max];
-    if (show_mean) values = [distribution_info.min, distribution_info.mean, distribution_info.max];
-
-    // If all 3 values are identical, show only a single one
-    if (range == 0) values = [distribution_info.min];
-
-    return tooltip_fragment(icon_name, values, max)
 }
 
 
@@ -373,32 +354,36 @@ local function tablesAreEqual(table1, table2) {
 }
 
 
+// Coerce 4 values into a single html tooltip line
+// all numeric inputs are expected to be floats: this function does the rounding
+// kill_proba is expected to be normalized between 0 and 1
+// hitchance is expected to be normalized between 0 and 100
 local function attack_info_tooltip_line(kill_proba, health_value, armor_value, hitchance, hitchance_icon)
 {
         local text_tooltip = "<div class='maxi-damage-tooltip'>";
 
         kill_proba = ::Math.round(100 * kill_proba);
         if (kill_proba > 0) {
-            text_tooltip += tooltip_fragment("maxi_tt_kill_given_hit.png", [kill_proba]);
+            text_tooltip += tooltip_fragment_values("maxi_tt_kill_given_hit.png", [kill_proba]);
         } else {
             text_tooltip += missing_value();
         }
 
         health_value = ::Math.round(health_value);
         if (health_value > 0) {
-            text_tooltip += tooltip_fragment("regular_damage.png", [health_value]);
+            text_tooltip += tooltip_fragment_values("regular_damage.png", [health_value]);
         } else {
             text_tooltip += missing_value();
         }
 
         armor_value = ::Math.round(armor_value);
         if (armor_value > 0) {
-            text_tooltip += tooltip_fragment("armor_damage.png", [armor_value]);
+            text_tooltip += tooltip_fragment_values("armor_damage.png", [armor_value]);
         } else {
             text_tooltip += missing_value();
         }
 
-        text_tooltip += tooltip_fragment(hitchance_icon, [hitchance]);
+        text_tooltip += tooltip_fragment_values(hitchance_icon, [hitchance]);
 
         text_tooltip += "</div>"
 
@@ -501,8 +486,8 @@ function deepEquals(_a, _b)
         if (info.kill_proba >= 1)
         {
             local text_kill = "<div class='maxi-damage-tooltip'>";
-            text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", [::Math.round(info.kill_proba)]);
-            text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", [::Math.round(info.kill_proba * hitchance / 100)]);
+            text_kill += tooltip_fragment_values("maxi_tt_kill_given_hit.png", [::Math.round(info.kill_proba)]);
+            text_kill += tooltip_fragment_values("maxi_tt_marginal_kill.png", [::Math.round(info.kill_proba * hitchance / 100)]);
             text_kill += "</div>"
             tooltip.push({
                 type = "text",
@@ -553,8 +538,8 @@ function deepEquals(_a, _b)
         if (info.kill_proba >= 1)
         {
             local text_kill = "<div class='maxi-damage-tooltip'>";
-            text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", [::Math.round(info.kill_proba)]);
-            text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", [::Math.round(info.kill_proba * hitchance / 100)]);
+            text_kill += tooltip_fragment_values("maxi_tt_kill_given_hit.png", [::Math.round(info.kill_proba)]);
+            text_kill += tooltip_fragment_values("maxi_tt_marginal_kill.png", [::Math.round(info.kill_proba * hitchance / 100)]);
             text_kill += "</div>"
             tooltip.push({
                 type = "text",
@@ -587,9 +572,9 @@ function deepEquals(_a, _b)
         if (false || ::ModMaxiTooltips.Mod.Debug.isEnabled())
         {
             local target_text = "<div class='maxi-damage-tooltip'>";
-            target_text += tooltip_fragment("health.png", [info.target.health]);
-            target_text += tooltip_fragment("armor_head.png", [info.target.head_armor]);
-            target_text += tooltip_fragment("armor_body.png", [info.target.body_armor]);
+            target_text += tooltip_fragment_values("health.png", [info.target.health]);
+            target_text += tooltip_fragment_values("armor_head.png", [info.target.head_armor]);
+            target_text += tooltip_fragment_values("armor_body.png", [info.target.body_armor]);
             target_text += "</div>";
             tooltip.push({
                 type = "text",
@@ -617,8 +602,8 @@ function deepEquals(_a, _b)
         if (info.kill_proba >= 1)
         {
             local text_kill = "<div class='maxi-damage-tooltip'>";
-            text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", [::Math.round(info.kill_proba)]);
-            text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", [::Math.round(info.kill_proba * hitchance / 100)]);
+            text_kill += tooltip_fragment_values("maxi_tt_kill_given_hit.png", [::Math.round(info.kill_proba)]);
+            text_kill += tooltip_fragment_values("maxi_tt_marginal_kill.png", [::Math.round(info.kill_proba * hitchance / 100)]);
             text_kill += "</div>"
             tooltip.push({
                 type = "text",
@@ -651,9 +636,9 @@ function deepEquals(_a, _b)
         if (false || ::ModMaxiTooltips.Mod.Debug.isEnabled())
         {
             local target_text = "<div class='maxi-damage-tooltip'>";
-            target_text += tooltip_fragment("health.png", [info.target.health]);
-            target_text += tooltip_fragment("armor_head.png", [info.target.head_armor]);
-            target_text += tooltip_fragment("armor_body.png", [info.target.body_armor]);
+            target_text += tooltip_fragment_values("health.png", [info.target.health]);
+            target_text += tooltip_fragment_values("armor_head.png", [info.target.head_armor]);
+            target_text += tooltip_fragment_values("armor_body.png", [info.target.body_armor]);
             target_text += "</div>";
             tooltip.push({
                 type = "text",
@@ -681,8 +666,8 @@ function deepEquals(_a, _b)
         if (info.kill_proba >= 1)
         {
             local text_kill = "<div class='maxi-damage-tooltip'>";
-            text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", [::Math.round(info.kill_proba)]);
-            text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", [::Math.round(info.kill_proba * hitchance / 100)]);
+            text_kill += tooltip_fragment_values("maxi_tt_kill_given_hit.png", [::Math.round(info.kill_proba)]);
+            text_kill += tooltip_fragment_values("maxi_tt_marginal_kill.png", [::Math.round(info.kill_proba * hitchance / 100)]);
             text_kill += "</div>"
             tooltip.push({
                 type = "text",
@@ -715,9 +700,9 @@ function deepEquals(_a, _b)
         if (false || ::ModMaxiTooltips.Mod.Debug.isEnabled())
         {
             local target_text = "<div class='maxi-damage-tooltip'>";
-            target_text += tooltip_fragment("health.png", [info.target.health]);
-            target_text += tooltip_fragment("armor_head.png", [info.target.head_armor]);
-            target_text += tooltip_fragment("armor_body.png", [info.target.body_armor]);
+            target_text += tooltip_fragment_values("health.png", [info.target.health]);
+            target_text += tooltip_fragment_values("armor_head.png", [info.target.head_armor]);
+            target_text += tooltip_fragment_values("armor_body.png", [info.target.body_armor]);
             target_text += "</div>";
             tooltip.push({
                 type = "text",
@@ -761,7 +746,7 @@ local function compute_hit_distribution(hitchance, num_attacks) {
     for (local num_hits = 0; num_hits <= num_attacks; num_hits++) {
         local proba_atomic = ::Math.pow(1. * hitchance / 100, num_hits) * ::Math.pow(1 - 1. * hitchance / 100, num_attacks - num_hits);
         local combinatorial_count = factorial[num_attacks] / factorial[num_hits] / factorial[num_attacks - num_hits];
-        res.push(::Math.round(100 * proba_atomic * combinatorial_count));
+        res.push(proba_atomic * combinatorial_count);
     }
 
     return res
@@ -775,13 +760,11 @@ local function compute_hit_distribution(hitchance, num_attacks) {
     local num_attacks = ::ModMaxiTooltips.TacticalTooltip.get_number_of_attacks(skill);
     local hit_distribution = compute_hit_distribution(hitchance, num_attacks);
 
-    local tooltip = [];
-
-    local info = ::ModMaxiTooltips.TacticalTooltip.attack_info_summary_from_parameters__smartfast(attacker, target, skill);
-
     local parameters_head = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Head);
     local parameters_body = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Body);
     local summary_info_mc = ::ModMaxiTooltips.TacticalTooltip.multi_hit_summary__monte_carlo(parameters_body, parameters_head, num_attacks, head_hit_chance)
+
+    local tooltip = [];
 
     {
         tooltip.push({
@@ -789,31 +772,19 @@ local function compute_hit_distribution(hitchance, num_attacks) {
                 text = "Monte-Carlo calculation"
         })
 
-        {
-            local text_hit_distribution = "<div class='maxi-damage-tooltip'>";
-            foreach (idx, value in hit_distribution) {
-                local icon_name = format("maxi_tt_num_hits_%x.png", idx)
-                text_hit_distribution += tooltip_fragment(icon_name, [value]);
-            }
-            text_hit_distribution += "</div>"
-            tooltip.push({
-                type = "text",
-                text = text_hit_distribution,
-                rawHTMLInText = true
-            })
-        }
-
+        // Normalized to 0-1
         local overall_kill_proba = 0;
         for (local num_hits = 0; num_hits < num_attacks; num_hits++) {
-            overall_kill_proba += 1. * summary_info_mc[num_hits].kill_proba * hit_distribution[num_hits+1] / 100;
+            overall_kill_proba += summary_info_mc[num_hits].kill_proba * hit_distribution[num_hits+1];
         }
 
         {
+            // Normalized to 0-100
             local marginal_kill_proba = overall_kill_proba * hitchance;
 
             local text_kill = "<div class='maxi-damage-tooltip'>";
-            text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", [::Math.round(overall_kill_proba)]);
-            text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", [::Math.round(marginal_kill_proba)]);
+            text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", ::Math.round(100 * overall_kill_proba));
+            text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", ::Math.round(marginal_kill_proba));
             text_kill += "</div>"
             tooltip.push({
                 type = "text",
@@ -822,49 +793,18 @@ local function compute_hit_distribution(hitchance, num_attacks) {
             })
         }
 
+        tooltip.push({
+                type = "text",
+                text = attack_info_tooltip_line(0, 0, 0, hit_distribution[0], "maxi_tt_num_hits_0.png"),
+                rawHTMLInText = true
+            })
+
         for (local num_hits = 0; num_hits < num_attacks; num_hits++) {
+            local icon_name = format("maxi_tt_num_hits_%x.png", num_hits + 1)
             local total_armor_damage = summary_info_mc[num_hits].body_armor_damage + summary_info_mc[num_hits].head_armor_damage;
             tooltip.push({
                 type = "text",
-                text = attack_info_tooltip_line(summary_info_mc[num_hits].kill_proba / 100, summary_info_mc[num_hits].health_damage, total_armor_damage, 100 - info.head_hit_chance, "hitchance.png"),
-                rawHTMLInText = true
-            })
-        }
-
-    }
-
-
-    {
-        tooltip.push({
-                type = "text",
-                text = "Smartfast calculation"
-        })
-
-        if (info.kill_proba >= 1)
-        {
-            local marginal_kill_proba = info.kill_proba * (100 - hit_distribution[0]) / 100;
-
-            local text_kill = "<div class='maxi-damage-tooltip'>";
-            text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", [::Math.round(info.kill_proba)]);
-            text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", [::Math.round(marginal_kill_proba)]);
-            text_kill += "</div>"
-            tooltip.push({
-                type = "text",
-                text = text_kill,
-                rawHTMLInText = true
-            })
-        }
-
-        {
-            tooltip.push({
-                type = "text",
-                text =  attack_info_tooltip_line(info.distribution_head_health.proba, info.distribution_head_health.mean, info.distribution_head_armor.mean, info.head_hit_chance, "chance_to_hit_head.png"),
-                rawHTMLInText = true
-            })
-
-            tooltip.push({
-                type = "text",
-                text = attack_info_tooltip_line(info.distribution_body_health.proba, info.distribution_body_health.mean, info.distribution_body_armor.mean, 100 - info.head_hit_chance, "hitchance.png"),
+                text = attack_info_tooltip_line(summary_info_mc[num_hits].kill_proba, summary_info_mc[num_hits].health_damage, total_armor_damage, 100 * hit_distribution[num_hits+1], icon_name),
                 rawHTMLInText = true
             })
         }
@@ -879,12 +819,12 @@ local function compute_hit_distribution(hitchance, num_attacks) {
     local hitchance = skill.getHitchance(target);
     local head_hit_chance = ::ModMaxiTooltips.TacticalTooltip.compute_head_hit_chance(attacker, target, skill);
 
-    local tooltip = [];
-
     local parameters_head = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Head);
     local parameters_body = ::ModMaxiTooltips.TacticalTooltip.compute_parameters_from_attack(attacker, target, skill, ::Const.BodyPart.Body);
 
     local summary_info_mc = ::ModMaxiTooltips.TacticalTooltip.split_man_summary__monte_carlo(parameters_body, parameters_head);
+
+    local tooltip = [];
 
     {
 
@@ -893,15 +833,17 @@ local function compute_hit_distribution(hitchance, num_attacks) {
                 text = "MonteCarlo calculation"
         })
 
-        local kill_proba = head_hit_chance * summary_info_mc.summary_head.kill_proba / 100 + (100 - head_hit_chance) * summary_info_mc.summary_body.kill_proba / 100;
+        // Normalized to 0-100
+        local kill_proba = head_hit_chance * summary_info_mc.summary_head.kill_proba + (100 - head_hit_chance) * summary_info_mc.summary_body.kill_proba;
 
         if (kill_proba >= 1)
         {
+            // Normalized to 0-100
             local marginal_kill_proba = kill_proba * hitchance / 100;
 
             local text_kill = "<div class='maxi-damage-tooltip'>";
-            text_kill += tooltip_fragment("maxi_tt_kill_given_hit.png", [::Math.round(kill_proba)]);
-            text_kill += tooltip_fragment("maxi_tt_marginal_kill.png", [::Math.round(marginal_kill_proba)]);
+            text_kill += tooltip_fragment_values("maxi_tt_kill_given_hit.png", [::Math.round(kill_proba)]);
+            text_kill += tooltip_fragment_values("maxi_tt_marginal_kill.png", [::Math.round(marginal_kill_proba)]);
             text_kill += "</div>"
             tooltip.push({
                 type = "text",
@@ -911,15 +853,18 @@ local function compute_hit_distribution(hitchance, num_attacks) {
         }
 
         {
+            local total_armor_damage;
+            total_armor_damage = summary_info_mc.summary_head.head_armor_damage + summary_info_mc.summary_head.body_armor_damage;
             tooltip.push({
                 type = "text",
-                text =  attack_info_tooltip_line(summary_info_mc.summary_head.kill_proba / 100, summary_info_mc.summary_head.health_damage, summary_info_mc.summary_head.head_armor_damage, head_hit_chance, "chance_to_hit_head.png"),
+                text =  attack_info_tooltip_line(summary_info_mc.summary_head.kill_proba, summary_info_mc.summary_head.health_damage, total_armor_damage, head_hit_chance, "chance_to_hit_head.png"),
                 rawHTMLInText = true
             })
 
+            total_armor_damage = summary_info_mc.summary_body.head_armor_damage + summary_info_mc.summary_body.body_armor_damage;
             tooltip.push({
                 type = "text",
-                text =  attack_info_tooltip_line(summary_info_mc.summary_body.kill_proba / 100, summary_info_mc.summary_body.health_damage, summary_info_mc.summary_body.body_armor_damage, 100 - head_hit_chance, "hitchance.png"),
+                text =  attack_info_tooltip_line(summary_info_mc.summary_body.kill_proba, summary_info_mc.summary_body.health_damage, total_armor_damage, 100 - head_hit_chance, "hitchance.png"),
                 rawHTMLInText = true
             })
         }

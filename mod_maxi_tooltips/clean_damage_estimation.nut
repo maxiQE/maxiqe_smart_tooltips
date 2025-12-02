@@ -159,7 +159,9 @@ local default_parameters = {
 
     local damage = health_damage_direct + health_damage_armor_break;
 
+    ::logError("Maxi TT Debug damage_with_roll; " + damage);
     damage *= parameters.bodypart_damage_mult;
+    ::logError("Maxi TT Debug damage_with_roll; " + damage + "   " + parameters.bodypart_damage_mult);
 
     local guaranteed_damage = 0
     if (parameters.guaranteed_damage > 0 && parameters.guaranteed_damage > damage) {
@@ -170,7 +172,7 @@ local default_parameters = {
     }
     damage = ::Math.max(0, ::Math.round(damage));
 
-    damage = ::Math.min(damage, parameters.health);
+    // damage = ::Math.min(damage, parameters.health);
 
     return {
         health_damage=damage,

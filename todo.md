@@ -9,6 +9,15 @@
 
 - check exactly what's expected in the attack_info_tooltip_line function (probability? 100xproba?) and fix in MC code
 
+- 5 element tooltip:
+    - line 1: kill proba    health damage   body armor damage   head armor
+    - line 2:                                                   hitchance
+    - single line: just compress it lmao?
+
+- 4 element tooltip:
+    - one line: kill proba    health damage   TOTAL armor damage   hitchance
+    - need one more input for armor damage icon: body armor, head armor, mixed damage
+
 - Monte carlo doesn't need to be fixed and use halton points: don't care lol
 - Actually, it's trivial isn't it? Fix sequence of 
 

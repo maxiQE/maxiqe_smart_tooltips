@@ -18,7 +18,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
     }
 
     function value() {
-        return ::Math.round(this.sum / this.count);
+        return this.sum / this.count;
     }
 }
 
@@ -56,7 +56,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
             local armor_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
             local health_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
 
-            local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, parameters_body);
+            local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, attacked_parameters);
 
             attacked_parameters.health -= res.health_damage;
             attacked_parameters.armor -= res.armor_damage;
@@ -73,7 +73,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
             local armor_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
             local health_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
 
-            local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, parameters_body);
+            local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, attacked_parameters);
 
             attacked_parameters.health -= res.health_damage;
             attacked_parameters.armor -= res.armor_damage;
@@ -88,7 +88,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
         health_damage.update(start_health - parameters_secondary_hit.health);
         body_armor_damage.update(start_body_armor - parameters_body.armor);
         head_armor_damage.update(start_head_armor - parameters_secondary_hit.armor);
-        kill_proba.update((parameters_secondary_hit.health <= 0).tofloat() * 100);
+        kill_proba.update(parameters_secondary_hit.health <= 0);
     }
 
     local summary_body = {
@@ -105,7 +105,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
     parameters_secondary_hit.bodypart_damage_mult = 1;
 
     health_damage = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
-    head_armor_damage = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
+    body_armor_damage = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
     head_armor_damage = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
     kill_proba = ::ModMaxiTooltips.TacticalTooltip.MeanCalculator();
 
@@ -124,7 +124,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
             local armor_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
             local health_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
 
-            local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, parameters_body);
+            local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, attacked_parameters);
 
             attacked_parameters.health -= res.health_damage;
             attacked_parameters.armor -= res.armor_damage;
@@ -140,7 +140,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
             local armor_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
             local health_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
 
-            local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, parameters_body);
+            local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, attacked_parameters);
 
             attacked_parameters.health -= res.health_damage;
             attacked_parameters.armor -= res.armor_damage;
@@ -154,7 +154,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
         health_damage.update(start_health - parameters_secondary_hit.health);
         body_armor_damage.update(start_body_armor - parameters_secondary_hit.armor);
         head_armor_damage.update(start_head_armor - parameters_head.armor);
-        kill_proba.update((parameters_secondary_hit.health <= 0).tofloat() * 100);
+        kill_proba.update(parameters_secondary_hit.health <= 0);
     }
 
     local summary_head = {
@@ -210,7 +210,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
                 local armor_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
                 local health_roll = ::Math.rand(attacked_parameters.min_damage, attacked_parameters.max_damage);
 
-                local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, parameters_body);
+                local res = ::ModMaxiTooltips.TacticalTooltip.damage_from_parameters__with_roll(armor_roll, health_roll, attacked_parameters);
 
                 attacked_parameters.health -= res.health_damage;
                 attacked_parameters.armor -= res.armor_damage;
@@ -222,7 +222,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
             health_damage[num_hits].update(start_health - parameters_body.health);
             body_armor_damage[num_hits].update(start_body_armor - parameters_body.armor);
             head_armor_damage[num_hits].update(start_head_armor - parameters_head.armor);
-            kill_proba[num_hits].update((parameters_body.health <= 0).tofloat() * 100);
+            kill_proba[num_hits].update(parameters_body.health <= 0);
         }
     }
 
