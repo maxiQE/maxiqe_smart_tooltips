@@ -10,6 +10,11 @@
 
 - MSU: enable RawHtml in all tooltips
 
+- Add nested tooltips to hit factors:
+
+    - swamp
+    - defender abilities
+
 - hit factors: visual improvements
 
     - clearly separate sections

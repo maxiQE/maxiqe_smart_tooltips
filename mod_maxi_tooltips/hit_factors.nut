@@ -80,7 +80,7 @@ local function getHitFactorSkillUniversalMalus(skill, tile, user, myTile, target
     {
         tooltips.push({
             icon = "ui/tooltips/negative.png",
-            text = red("" + (-skill.m.HitChanceBonus) + "%") + " " + skill.getName()
+            text = red("" + (-skill.m.HitChanceBonus) + "%") + " " + ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill))
         });
     }
     return tooltips;
@@ -98,13 +98,13 @@ local function getHitFactorSkillHitChanceModifier(skill, tile, user, myTile, tar
         if (diff > 0) {
             tooltips.push({
                 icon = "ui/tooltips/positive.png",
-                text = green(diff + "%") + " " + skill.getName()
+                text = green(diff + "%") + " " + ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill))
             });
         }
         if (diff < 0) {
             tooltips.push({
                 icon = "ui/tooltips/negative.png",
-                text = green(diff + "%") + " " + skill.getName()
+                text = green(diff + "%") + " " + ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill))
             });
         }
     }
