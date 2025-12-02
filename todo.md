@@ -13,6 +13,10 @@
 - Multi-hit tooltip
 - split-man tooltip
 
+- include hit factors
+
+- custom icons add concept tooltips to all icons
+
 ## Tests
 
 Use the combat simulator mod from taro
