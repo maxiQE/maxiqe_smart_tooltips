@@ -192,6 +192,8 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 	local collapseThreshold = ::ModMaxiTooltips.Mod.ModSettings.getSetting("CollapseEffectsWhenX").getValue();
 	local effectList = [];
 
+	local extraData = "entityId:" + entity.getID();
+
 	local statusEffects = entity.getSkills().query(::Const.SkillType.StatusEffect | ::Const.SkillType.PermanentInjury, false, true);
 	if (statusEffects.len() != 0 || ::ModMaxiTooltips.Mod.ModSettings.getSetting("HeaderForEmptyCategories").getValue() == true) ::ModMaxiTooltips.TacticalTooltip.pushSectionName(effectList, "Effects", currentID);
 	currentID++;
@@ -219,7 +221,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 				id = currentID,
 				type = "text",
 				icon = statusEffect.getIcon(),
-				text = ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(statusEffect, true))
+				text = ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(statusEffect, extraData, true))
 			};
 			currentID++;
 
@@ -233,7 +235,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 		{
 			foreach( statusEffect in statusEffects )
 			{
-				entryText += ::ModMaxiTooltips.NestedTooltips.getNestedSkillName(statusEffect) + ", ";
+				entryText += ::ModMaxiTooltips.NestedTooltips.getNestedSkillName(statusEffect, extraData) + ", ";
 			}
 			if (entryText != "") entryText = entryText.slice(0, -2);
 		}
@@ -241,7 +243,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 		{
 			foreach( statusEffect in statusEffects )
 			{
-				entryText += ::ModMaxiTooltips.NestedTooltips.getNestedSkillImage(statusEffect);
+				entryText += ::ModMaxiTooltips.NestedTooltips.getNestedSkillImage(statusEffect, extraData);
 			}
 		}
 
@@ -263,6 +265,8 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 	local collapseThreshold = ::ModMaxiTooltips.Mod.ModSettings.getSetting("CollapsePerksWhenX").getValue();
 	local perkList = [];
 
+	local extraData = "entityId:" + entity.getID();
+
 	local perks = entity.getSkills().query(::Const.SkillType.Perk, true, true);
 	if (perks.len() != 0 || ::ModMaxiTooltips.Mod.ModSettings.getSetting("HeaderForEmptyCategories").getValue() == true) ::ModMaxiTooltips.TacticalTooltip.pushSectionName(perkList, "Perks", currentID);
 	currentID++;
@@ -282,8 +286,10 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 				id = currentID,
 				type = "text",
 				icon = perkDef != null ? perkDef.Icon : perk.getIcon(),
+				// TODO: check if this works, and remove
 				// text = ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedPerkName(perk))
-                text = ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(perk))
+                // text = ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(perk))
+				text = ::ModMaxiTooltips.Mod.parseString(::ModMaxiTooltips.NestedTooltips.getNestedPerkName(perk, extraData)),
 			};
 			currentID++;
 
@@ -300,7 +306,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 				if (::ModMaxiTooltips.Mod.ModSettings.getSetting("ShowStatusPerkAndEffect").getValue() == false) {}
 					if (!perk.isHidden() && perk.isType(::Const.SkillType.StatusEffect)) continue;
 
-				entryText += ::ModMaxiTooltips.NestedTooltips.getNestedSkillName(perk) + ", ";
+				entryText += ::ModMaxiTooltips.NestedTooltips.getNestedPerkName(perk, extraData) + ", ";
 			}
 			if (entryText != "") entryText = entryText.slice(0, -2);
 		}
@@ -311,7 +317,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 				if (::ModMaxiTooltips.Mod.ModSettings.getSetting("ShowStatusPerkAndEffect").getValue() == false)
 					if (!perk.isHidden() && perk.isType(::Const.SkillType.StatusEffect)) continue;
 
-				entryText += ::ModMaxiTooltips.NestedTooltips.getNestedPerkImage(perk);
+				entryText += ::ModMaxiTooltips.NestedTooltips.getNestedPerkImage(perk, extraData);
 			}
 		}
 
@@ -339,13 +345,15 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 	if (mainhandItems.len() != 0 || offhandItems.len() != 0 || accessories.len() != 0 || ::ModMaxiTooltips.Mod.ModSettings.getSetting("HeaderForEmptyCategories").getValue() == true) ::ModMaxiTooltips.TacticalTooltip.pushSectionName(itemList, "Equipped Items", currentID);
 	currentID++;
 
+	local actorID = entity.getID();
+
 	foreach(mainhandItem in mainhandItems)
 	{
 		itemList.push({
 			id = currentID,
 			type = "text",
 			icon = "ui/items/" + mainhandItem.getIcon(),
-			text = ::ModMaxiTooltips.Mod.Tooltips.parseString(format("[%s|Item+%s,itemId:%s,itemOwner:entity]", mainhandItem.getName(), mainhandItem.ClassName, mainhandItem.getInstanceID()))
+			text = ::ModMaxiTooltips.Mod.Tooltips.parseString(format("[%s|Item+%s,itemId:%s,itemOwner:entity,entityId:%i]", mainhandItem.getName(), mainhandItem.ClassName, mainhandItem.getInstanceID(), actorID))
 		});
 		currentID++;
 	}
@@ -355,7 +363,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 			id = currentID,
 			type = "text",
 			icon = "ui/items/" + offhandItem.getIcon(),
-			text = ::ModMaxiTooltips.Mod.Tooltips.parseString(format("[%s|Item+%s,itemId:%s,itemOwner:entity]", offhandItem.getName(), offhandItem.ClassName, offhandItem.getInstanceID()))
+			text = ::ModMaxiTooltips.Mod.Tooltips.parseString(format("[%s|Item+%s,itemId:%s,itemOwner:entity,entityId:%i]", offhandItem.getName(), offhandItem.ClassName, offhandItem.getInstanceID(), actorID))
 		});
 		currentID++;
 	}
@@ -365,7 +373,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 			id = currentID,
 			type = "text",
 			icon = "ui/items/" + accessory.getIcon(),
-			text = ::ModMaxiTooltips.Mod.Tooltips.parseString(format("[%s|Item+%s,itemId:%s,itemOwner:entity]", accessory.getName(), accessory.ClassName, accessory.getInstanceID()))
+			text = ::ModMaxiTooltips.Mod.Tooltips.parseString(format("[%s|Item+%s,itemId:%s,itemOwner:entity,entityId:%i]", accessory.getName(), accessory.ClassName, accessory.getInstanceID(), actorID))
 		});
 		currentID++;
 	}
@@ -379,6 +387,8 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 	local currentID = _startID;
 	local itemList = [];
 
+	local actorID = entity.getID();
+
 	local bagItems = entity.getItems().getAllItemsAtSlot(::Const.ItemSlot.Bag);
 	if (bagItems.len() != 0 || ::ModMaxiTooltips.Mod.ModSettings.getSetting("HeaderForEmptyCategories").getValue() == true) ::ModMaxiTooltips.TacticalTooltip.pushSectionName(itemList, "Items in bag", currentID);
 	currentID++;
@@ -389,8 +399,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 			id = currentID,
 			type = "text",
 			icon = "ui/items/" + bagItem.getIcon(),
-			text = ::ModMaxiTooltips.Mod.Tooltips.parseString(format("[%s|Item+%s,itemId:%s,itemOwner:entity]", bagItem.getName(), bagItem.ClassName, bagItem.getInstanceID()))
-		});
+			text = ::ModMaxiTooltips.Mod.Tooltips.parseString(format("[%s|Item+%s,itemId:%s,itemOwner:entity,entityId:%i]", bagItem.getName(), bagItem.ClassName, bagItem.getInstanceID(), actorID)),		});
 		currentID++;
 	}
 
@@ -428,6 +437,8 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 {
 	local ret = [];
 
+	local extraData = "entityId:" + entity.getID();
+
 	local skills = entity.getSkills().getAllSkillsOfType(::Const.SkillType.Active);
 	// Hide active skills for which NPC characters do not have an AI Behavior
 	// We exclude PlayerAnimals for the edge case where a player may trigger their skills indirectly.
@@ -464,7 +475,14 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 				id = _startID++,
 				type = "text",
 				icon = skill.getIcon(),
-				text = ::ModMaxiTooltips.Mod.Tooltips.parseString(format("%s (%s, %s)", ::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill), ::MSU.Text.colorNegative(skill.getActionPointCost()), ::MSU.Text.colorPositive(skill.getFatigueCost())))
+				text = ::Reforged.Mod.Tooltips.parseString(
+					format(
+						"%s (%s, %s)",
+						::Reforged.NestedTooltips.getNestedSkillName(skill, extraData),
+						::MSU.Text.colorNegative(skill.getActionPointCost()),
+						::MSU.Text.colorPositive(skill.getFatigueCost())
+					)
+				),
 			});
 		}
 	}
@@ -475,7 +493,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 		{
 			foreach (skill in skills)
 			{
-				entryText += ::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill) + ", ";
+				entryText += ::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill, extraData) + ", ";
 			}
 			if (entryText != "") entryText = entryText.slice(0, -2);
 		}
@@ -483,7 +501,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 		{
 			foreach (skill in skills)
 			{
-				entryText += ::ModMaxiTooltips.NestedTooltips.getNestedSkillImage(skill, true);
+				entryText += ::ModMaxiTooltips.NestedTooltips.getNestedSkillImage(skill, extraData, true);
 			}
 		}
 
