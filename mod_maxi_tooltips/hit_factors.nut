@@ -149,7 +149,7 @@ local function getHitFactorHeightAdvantage(skill, tile, user, myTile, targetEnti
     if (myTile.Level > tile.Level)
     {
         local levelDifference = myTile.Level - tile.Level;
-        local bonus = ::Math.abs(::Const.Combat.LevelDifferenceToHitBonus * levelDifference);
+        local bonus = ::Math.abs(::Const.Combat.LevelDifferenceToHitBonus);
         tooltips.push({
             icon = "ui/tooltips/positive.png",
             text = green("+" + bonus + "%") + " " + "Height advantage"
@@ -303,17 +303,15 @@ local function getHitFactorShieldwall(skill, tile, user, myTile, targetEntity, d
             local shieldwallEffect = targetEntity.getSkills().getSkillByID("effects.shieldwall");
             if (shieldBonus > 0 && shieldwallEffect) {
                 local adjacencyBonus = ::Math.abs(shieldwallEffect.getBonus());
-                if (skill.m.IsShieldwallRelevant) {
+                tooltips.push({
+                    icon = "ui/tooltips/negative.png",
+                    text = red("-" + (shieldBonus) + "%") + " " + nested_tooltip("Shieldwall", "Skill", shieldwallEffect.ClassName)
+                });
+                if (adjacencyBonus) {
                     tooltips.push({
                         icon = "ui/tooltips/negative.png",
-                        text = red("-" + (shieldBonus) + "%") + " " + nested_tooltip("Shieldwall", "Skill", shieldwallEffect.ClassName)
+                        text = red("-" + (adjacencyBonus) + "%") + " " + nested_tooltip("Adjacency Bonus", "Skill", shieldwallEffect.ClassName)
                     });
-                    if (adjacencyBonus) {
-                        tooltips.push({
-                            icon = "ui/tooltips/negative.png",
-                            text = red("-" + (adjacencyBonus) + "%") + " " + nested_tooltip("Adjacency Bonus", "Skill", shieldwallEffect.ClassName)
-                        });
-                    }
                 }
             }
         }
