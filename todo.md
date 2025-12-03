@@ -14,10 +14,14 @@
 
     - swamp
     - defender abilities
+    - night-time
+
+- hit factor: add defender reduced RD during nighttime
 
 - hit factors: visual improvements
 
     - clearly separate sections
+    - css styling to align the bonus, malus, etc on a single column
 
 - separate armor break as a separate line
 

@@ -1,6 +1,14 @@
 # MaxiQE informative tooltips
 
-Do you want to actually understand how battles work? This mod gives you all the information you need, right in the tooltip.
+Do you want to actually understand how battles work? This mod gives you all the information you need.
+
+- View enemy characteristics, perks, equipement.
+- Get a preview of how much damage your attack will deal and your chance of killing your enemy.
+- Get all factors impacting your hit chance.
+
+All of this and more is immediately accessible.
+
+[Official git repository](https://github.com/maxiQE/maxiqe_smart_tooltips)
 
 ## Key features
 

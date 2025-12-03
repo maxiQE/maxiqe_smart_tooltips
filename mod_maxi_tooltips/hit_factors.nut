@@ -50,7 +50,7 @@ local function getHitFactorSkillHitChanceBonus(skill, tile, user, myTile, target
     if (skill.m.HitChanceBonus > 0) {
         tooltips.push({
             icon = "ui/tooltips/positive.png",
-            text = green("" + skill.m.HitChanceBonus + "%") + " " + ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill))
+            text = green("+" + skill.m.HitChanceBonus + "%") + " " + ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill))
         });
     }
     return tooltips;
@@ -63,9 +63,10 @@ local function getHitFactorSkillTooCloseMalus(skill, tile, user, myTile, targetE
     local tooltips = [];
     if (skill.m.IsTooCloseShown && skill.m.HitChanceBonus < 0)
     {
+        local bonus = ::Math.abs(skill.m.HitChanceBonus);
         tooltips.push({
             icon = "ui/tooltips/negative.png",
-            text = red("" + (-skill.m.HitChanceBonus) + "%") + " Too close"
+            text = red("-" + bonus + "%") + " Too close"
         });
     }
     return tooltips;
@@ -78,9 +79,10 @@ local function getHitFactorSkillUniversalMalus(skill, tile, user, myTile, target
     local tooltips = [];
     if (!skill.m.IsTooCloseShown && skill.m.HitChanceBonus < 0)
     {
+        local malus = ::Math.abs(skill.m.HitChanceBonus)
         tooltips.push({
             icon = "ui/tooltips/negative.png",
-            text = red("" + (-skill.m.HitChanceBonus) + "%") + " " + ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill))
+            text = red("-" + malus + "%") + " " + ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill))
         });
     }
     return tooltips;
@@ -98,13 +100,14 @@ local function getHitFactorSkillHitChanceModifier(skill, tile, user, myTile, tar
         if (diff > 0) {
             tooltips.push({
                 icon = "ui/tooltips/positive.png",
-                text = green(diff + "%") + " " + ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill))
+                text = green("+" + diff + "%") + " " + ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill))
             });
         }
         if (diff < 0) {
+            diff = ::Math.abs(diff);
             tooltips.push({
                 icon = "ui/tooltips/negative.png",
-                text = green(diff + "%") + " " + ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill))
+                text = red("-" + diff + "%") + " " + ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill))
             });
         }
     }
@@ -121,11 +124,11 @@ local function getHitFactorBonusFromSurrounding(skill, tile, user, myTile, targe
         {
             local malus = ::Math.max(0, user.getCurrentProperties().SurroundedBonus - targetEntity.getCurrentProperties().SurroundedDefense) * targetEntity.getSurroundedCount();
 
-            if (malus)
+            if (malus > 0)
             {
                 tooltips.push({
                     icon = "ui/tooltips/positive.png",
-                    text = green(malus + "%") + " " + "Surrounded"
+                    text = green("+" + malus + "%") + " " + "Surrounded"
                 });
             }
         } else {
@@ -143,11 +146,13 @@ local function getHitFactorBonusFromSurrounding(skill, tile, user, myTile, targe
 local function getHitFactorHeightAdvantage(skill, tile, user, myTile, targetEntity, distanceToTarget)
 {
     local tooltips = [];
-    if (tile.Level < skill.m.Container.getActor().getTile().Level)
+    if (myTile.Level > tile.Level)
     {
+        local levelDifference = myTile.Level - tile.Level;
+        local bonus = ::Math.abs(::Const.Combat.LevelDifferenceToHitBonus * levelDifference);
         tooltips.push({
             icon = "ui/tooltips/positive.png",
-            text = green(::Const.Combat.LevelDifferenceToHitBonus + "%") + " " + "Height advantage"
+            text = green("+" + bonus + "%") + " " + "Height advantage"
         });
     }
     return tooltips;
@@ -186,7 +191,7 @@ local function getHitFactorFastAdaptationBonus(skill, tile, user, myTile, target
             local bonus = 10 * fast_adaptation.m.Stacks;
             tooltips.push({
                 icon = "ui/tooltips/positive.png",
-                text = green(bonus + "%") + " " + nested_tooltip(format("Fast Adaption (%i)", fast_adaptation.m.Stacks),"Skill",fast_adaptation.ClassName)
+                text = green("+" + bonus + "%") + " " + nested_tooltip(format("Fast Adaption (%i)", fast_adaptation.m.Stacks),"Skill",fast_adaptation.ClassName)
             });
         }
     }
@@ -212,7 +217,7 @@ local function getHitFactorOathOfWrath(skill, tile, user, myTile, targetEntity, 
                 local bonus = 15
                 tooltips.push({
                     icon = "ui/tooltips/positive.png",
-                    text = green(bonus + "%")+ " " + nested_tooltip("Oath of Wrath","Skill",oath.ClassName)
+                    text = green("+" + bonus + "%")+ " " + nested_tooltip("Oath of Wrath","Skill",oath.ClassName)
                 });
             }
         }
@@ -227,11 +232,11 @@ local function getHitFactorHeightDisadvantage(skill, tile, user, myTile, targetE
     local tooltips = [];
     if (tile.Level > myTile.Level)
     {
-        local levelDifference = myTile.Level - tile.Level;
-        local malus = ::Const.Combat.LevelDifferenceToHitMalus * levelDifference;
+        local levelDifference = tile.Level - myTile.Level;
+        local malus = ::Math.abs(::Const.Combat.LevelDifferenceToHitMalus * levelDifference);
         tooltips.push({
             icon = "ui/tooltips/negative.png",
-            text = red(malus + "%") + " " + "Height disadvantage"
+            text = red("-" + malus + "%") + " " + "Height disadvantage"
         });
     }
     return tooltips;
@@ -268,6 +273,7 @@ local function getHitFactorArmedWithShield(skill, tile, user, myTile, targetEnti
         if (shield != null && shield.isItemType(::Const.Items.ItemType.Shield))
         {
             shieldBonus = (skill.m.IsRanged ? shield.getRangedDefense() : shield.getMeleeDefense()) * (targetEntity.getCurrentProperties().IsSpecializedInShields ? 1.25 : 1.0);
+            shieldBonus = ::Math.abs(shieldBonus);
 
             if (skill.m.IsShieldRelevant) {
                 tooltips.push({
@@ -292,9 +298,11 @@ local function getHitFactorShieldwall(skill, tile, user, myTile, targetEntity, d
 
         if (shield != null && shield.isItemType(::Const.Items.ItemType.Shield))
         {
+            shieldBonus = (skill.m.IsRanged ? shield.getRangedDefense() : shield.getMeleeDefense()) * (targetEntity.getCurrentProperties().IsSpecializedInShields ? 1.25 : 1.0);
+            shieldBonus = ::Math.abs(shieldBonus);
             local shieldwallEffect = targetEntity.getSkills().getSkillByID("effects.shieldwall");
-            if (shieldwallEffect) {
-                local adjacencyBonus = shieldwallEffect.getBonus();
+            if (shieldBonus > 0 && shieldwallEffect) {
+                local adjacencyBonus = ::Math.abs(shieldwallEffect.getBonus());
                 if (skill.m.IsShieldwallRelevant) {
                     tooltips.push({
                         icon = "ui/tooltips/negative.png",
@@ -303,7 +311,7 @@ local function getHitFactorShieldwall(skill, tile, user, myTile, targetEntity, d
                     if (adjacencyBonus) {
                         tooltips.push({
                             icon = "ui/tooltips/negative.png",
-                            text = red("-" + (shieldBonus) + "%") + " " + nested_tooltip("Adjacency Bonus", "Skill", shieldwallEffect.ClassName)
+                            text = red("-" + (adjacencyBonus) + "%") + " " + nested_tooltip("Adjacency Bonus", "Skill", shieldwallEffect.ClassName)
                         });
                     }
                 }
@@ -360,10 +368,15 @@ local function getHitFactorDistanceModifier(skill, tile, user, myTile, targetEnt
         {
             local propertiesWithSkill = skill.m.Container.buildPropertiesForUse(skill, targetEntity);
             local malus = (distanceToTarget - skill.m.MinRange) * propertiesWithSkill.HitChanceAdditionalWithEachTile * propertiesWithSkill.HitChanceWithEachTileMult;
-            tooltips.push({
-                icon = "ui/tooltips/negative.png",
-                text = red(malus + "%") + " " + "Distance of " + tile.getDistanceTo(user.getTile())
-            });
+            if (malus < 0) {
+                malus = ::Math.abs(malus);
+                tooltips.push({
+                    icon = "ui/tooltips/negative.png",
+                    text = red("-" + malus + "%") + " "
+                    + ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(skill)) + " "
+                    + "Distance of " + distanceToTarget,
+                });
+            }
         }
     }
     return tooltips;
@@ -384,7 +397,7 @@ local function getHitFactorBlockedLineOfSightMalus(skill, tile, user, myTile, ta
             {
                 local propertiesWithSkill = skill.m.Container.buildPropertiesForUse(skill, targetEntity);
                 local blockChance = ::Const.Combat.RangedAttackBlockedChance * propertiesWithSkill.RangedAttackBlockedChanceMult;
-                blockChance = ::Math.ceil(blockChance * 100);
+                blockChance = ::Math.abs(::Math.ceil(blockChance * 100));
                 tooltips.push({
                     icon = "ui/tooltips/negative.png",
                     text = red("-" + blockChance + "%") + " " + "Line of fire blocked"
@@ -421,13 +434,14 @@ local function getHitFactorLungeDamageModifier(skill, tile, user, myTile, target
         if (diff > 0) {
             tooltips.push({
                 icon = "ui/tooltips/positive.png",
-                text = "High initiative " + green(diff + "%") + " " + "Lunge damage"
+                text = "High initiative " + green("+" + diff + "%") + " " + "Lunge damage"
             });
         }
         if (diff < 0) {
+            diff = ::Math.abs(diff);
             tooltips.push({
                 icon = "ui/tooltips/negative.png",
-                text = "Low initiative " + red("-" + (-diff) + "%") + " " + "Lunge damage"
+                text = "Low initiative " + red("-" + diff + "%") + " " + "Lunge damage"
             });
         }
     }
@@ -481,14 +495,15 @@ local function getHitFactorDamageResistance(skill, tile, user, myTile, targetEnt
                         if (diff > 0) {
                             tooltips.push({
                                 icon = "ui/tooltips/positive.png",
-                                text = damage_reduction_skill_tt + green(diff + "%") + " " + description
+                                text = damage_reduction_skill_tt + green("+" + diff + "%") + " " + description
                             });
                         }
 
                         if (diff < 0) {
+                            diff = ::Math.abs(diff);
                             tooltips.push({
                                 icon = "ui/tooltips/negative.png",
-                                text = damage_reduction_skill_tt + " " + red("-" + (-diff) + "%") + " " + description
+                                text = damage_reduction_skill_tt + " " + red("-" + diff + "%") + " " + description
                             });
                         }
                     }
