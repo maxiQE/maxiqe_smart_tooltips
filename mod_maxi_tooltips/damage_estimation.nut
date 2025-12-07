@@ -215,10 +215,18 @@ local function interval(a, b, n) {
     local destroy_point;
     local proba_armor_destroy;
     foreach (idx, armor_roll in armor_roll_interval) {
-        if ((::Math.max(0, armor_roll * parameters.armor_multiplier_1) * parameters.armor_multiplier_2) > parameters.armor) {
+        if ((::Math.max(0, armor_roll * parameters.armor_multiplier_1) * parameters.armor_multiplier_2) >= parameters.armor) {
             destroy_point = armor_roll;
             proba_armor_destroy = (armor_roll_interval.len() - idx) * weight;
             break
+        }
+    }
+
+    if (destroy_point == null) {
+        return {
+            proba_armor_destroy=0.,
+            destroy_point=null,
+            representation=[[1., parameters.min_damage, parameters.max_damage, armor_roll_number_of_points]]
         }
     }
 

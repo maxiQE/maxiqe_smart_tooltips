@@ -8,19 +8,19 @@
 
 ## Test
 
-- test in scenario?
+- test in scenario
 
 - check hit factors tooltips
 - check swamp hit factor popup
 - check riposte
 - x check nine lines
-- check shieldwall with bonus
-- check night hit factor popup
-- check racials
+- x check shieldwall with bonus
+- x check night hit factor popup
+- x check racials
 - x check items on actor and ground
 - x check perks
 - x check actives
-- check displayed hit chance on tooltip versus in log
+- x check displayed hit chance on tooltip versus in log
 
 - remove `::ModMaxiTooltips.Mod.Debug` in all files
 
@@ -29,6 +29,10 @@
 - MSU: enable RawHtml in all tooltips
 
 - Add nested tooltip icons to hit factors
+
+- Add icons for damage reduction effects, instead of text
+
+- Add explainer text (it's already coded, I think?) for distance to target and height difference
 
 - Add nested tooltips to hit factors:
 
@@ -47,7 +51,10 @@
 
 - use weighted mean util in main damage calculation
 
-- ? injury threshold, injury chance information
+- add:
+    - injury list
+    - injury threshold
+    - ?injury chance?? (but no space to display information?)
 
 - ? shield attacks
 

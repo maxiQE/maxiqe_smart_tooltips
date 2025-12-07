@@ -78,7 +78,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
     tooltip.extend(::ModMaxiTooltips.TacticalTooltip.hitChanceTooltip(entity, skill));
 
     local acting_text = ::Tactical.TurnSequenceBar.getActiveEntity() == entity ? "Acting right now!" : entity.m.IsTurnDone || turnsToGo == null ? "Turn done" : "Acts in " + turnsToGo + (turnsToGo > 1 ? " turns" : " turn");
-    if (entity.m.IsActingEachTurn && !entity.m.IsTurnDone && entity.isWaitActionSpent()){
+    if (entity.m.IsActingEachTurn && !entity.m.IsTurnDone && entity.isWaitActionSpent() && !(::Tactical.TurnSequenceBar.getActiveEntity() == entity)){
         acting_text = ModMaxiTooltips.Mod.Tooltips.parseString("Acts [again|Concept.Wait] in " + turnsToGo + (turnsToGo > 1 ? " turns" : " turn"));
     }
 
@@ -286,9 +286,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 				id = currentID,
 				type = "text",
 				icon = perkDef != null ? perkDef.Icon : perk.getIcon(),
-				// TODO: check why perk doesn't work
 				text = ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedPerkName(perk, extraData)),
-				// text = ::ModMaxiTooltips.Mod.Tooltips.parseString(::ModMaxiTooltips.NestedTooltips.getNestedSkillName(perk, extraData)),
 			};
 			currentID++;
 
@@ -305,9 +303,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 				if (::ModMaxiTooltips.Mod.ModSettings.getSetting("ShowStatusPerkAndEffect").getValue() == false) {}
 					if (!perk.isHidden() && perk.isType(::Const.SkillType.StatusEffect)) continue;
 
-					// TODO
 					entryText += ::ModMaxiTooltips.NestedTooltips.getNestedPerkName(perk, extraData) + ", ";
-					// entryText += ::ModMaxiTooltips.NestedTooltips.getNestedSkillName(perk, extraData) + ", ";
 				}
 			if (entryText != "") entryText = entryText.slice(0, -2);
 		}
@@ -318,9 +314,7 @@ if (!("TacticalTooltip" in ::ModMaxiTooltips)) {
 				if (::ModMaxiTooltips.Mod.ModSettings.getSetting("ShowStatusPerkAndEffect").getValue() == false)
 					if (!perk.isHidden() && perk.isType(::Const.SkillType.StatusEffect)) continue;
 
-					// TODO
 					entryText += ::ModMaxiTooltips.NestedTooltips.getNestedPerkImage(perk, extraData);
-					// entryText += ::ModMaxiTooltips.NestedTooltips.getNestedSkillImage(perk, extraData);
 				}
 		}
 
