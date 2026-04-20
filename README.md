@@ -10,6 +10,8 @@ All of this and more is immediately accessible.
 
 [Official git repository](https://github.com/maxiQE/maxiqe_smart_tooltips)
 
+[Nexus mods link](https://www.nexusmods.com/battlebrothers/mods/934)
+
 ## Key features
 
 - View all character stats on the battlefields, even as they get modified by injury, morale effects, etc.
